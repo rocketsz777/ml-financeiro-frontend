@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import axios from "axios"
+import { api } from "../services/api";
 
 function Sales() {
 
@@ -11,11 +11,10 @@ function Sales() {
 
   useEffect(() => {
 
-    axios
-
-      .get(
-        "http://localhost:8080/api/sales"
-      )
+   api
+     .get(
+       "/api/sales"
+     )
 
       .then(response => {
 

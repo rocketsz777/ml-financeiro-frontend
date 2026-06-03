@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
-
-import axios from "axios"
+import { api } from "./services/api";
 
 import {
   Routes,
@@ -8,6 +7,16 @@ import {
   Link,
   useLocation
 } from "react-router-dom"
+
+import {
+  Download,
+  LayoutDashboard,
+  Package,
+  Power,
+  ReceiptText,
+  ShoppingBag,
+  Store
+} from "lucide-react"
 
 import {
   BarChart,
@@ -41,49 +50,237 @@ function App() {
   const [period, setPeriod] =
     useState("MONTH")
 
-  const [showAllProducts, setShowAllProducts] =
-    useState(false)
-
-  const [showAllProfits, setShowAllProfits] =
-    useState(false)
-
   const [loadingImport, setLoadingImport] =
     useState(false)
+
+  const [appReady, setAppReady] =
+    useState(false)
+
+  const [mercadoLivreReady, setMercadoLivreReady] =
+    useState(false)
+
+  const [shopeeReady, setShopeeReady] =
+    useState(false)
+
+  const wakeUpBackend = async () => {
+
+    try {
+
+      const health = await api.get("/health")
+
+      const isOnline =
+        health.data.status === "UP"
+
+      setAppReady(isOnline)
+
+      checkConnections()
+
+      return isOnline
+
+    } catch {
+
+      setAppReady(false)
+
+      return false
+    }
+  }
+
+  const connectMercadoLivre = async () => {
+
+    try {
+
+      const appOnline =
+        await wakeUpBackend()
+
+      if (!appOnline) {
+
+        alert(
+          "A API ainda nao esta online. Clique em Ligar App e tente novamente em alguns segundos."
+        )
+
+        return
+      }
+
+      const response =
+        await api.get(
+          "/oauth/mercadolivre/login"
+        )
+
+      window.location.href =
+        response.data
+
+    } catch (error) {
+
+      console.error(error)
+
+      setMercadoLivreReady(false)
+
+      alert(
+        "Nao foi possivel iniciar a autenticacao do Mercado Livre"
+      )
+    }
+  }
+
+  const connectShopee = async () => {
+
+    try {
+
+      const appOnline =
+        await wakeUpBackend()
+
+      if (!appOnline) {
+
+        alert(
+          "A API ainda nao esta online. Clique em Ligar App e tente novamente em alguns segundos."
+        )
+
+        return
+      }
+
+      const response =
+        await api.get(
+          "/shopee/login"
+        )
+
+      window.location.href =
+        response.data
+
+    } catch (error) {
+
+      console.error(error)
+
+      setShopeeReady(false)
+
+      alert(
+        "Nao foi possivel iniciar a autenticacao da Shopee"
+      )
+    }
+  }
 
   useEffect(() => {
 
     loadDashboard()
+    checkConnections()
 
   }, [marketplace, period])
 
-  const loadDashboard = () => {
+  useEffect(() => {
 
-    let url =
-      `http://localhost:8080/api/dashboard/summary?period=${period}`
+    const params =
+      new URLSearchParams(
+        location.search
+      )
 
-    if (marketplace !== "ALL") {
+    const auth =
+      params.get("auth")
 
-      url +=
-        `&marketplace=${marketplace}`
+    const status =
+      params.get("status")
+
+    if (!auth
+      || !status) {
+
+      return
     }
 
-    axios
-      .get(url)
+    checkConnections()
 
-      .then(response => {
+    const marketplaceName =
+      auth === "shopee"
+        ? "Shopee"
+        : "Mercado Livre"
 
-        setDashboard(
-          response.data
-        )
+    alert(
+      status === "success"
+        ? `${marketplaceName} conectado com sucesso`
+        : `Nao foi possivel conectar ${marketplaceName}`
+    )
 
-      })
+    window.history.replaceState(
+      null,
+      "",
+      location.pathname
+    )
 
-      .catch(error => {
+  }, [location.search])
 
-        console.error(error)
+ const loadDashboard = () => {
 
-      })
-  }
+   let url =
+     `/api/dashboard/summary?period=${period}`
+
+   if (marketplace !== "ALL") {
+
+     url +=
+       `&marketplace=${marketplace}`
+   }
+
+   api
+     .get(url)
+
+     .then(response => {
+
+       setDashboard(
+         response.data
+       )
+
+     })
+
+     .catch(error => {
+
+       console.error(error)
+
+     })
+ }
+
+  const checkConnections = async () => {
+
+   try {
+
+     const health =
+       await api.get("/health")
+
+     setAppReady(
+       health.data.status === "UP"
+     )
+
+   } catch {
+
+     setAppReady(false)
+   }
+
+   try {
+
+     const ml =
+       await api.get(
+         "/api/mercadolivre/status"
+       )
+
+     setMercadoLivreReady(
+       ml.data === "CONECTADO"
+     )
+
+   } catch {
+
+     setMercadoLivreReady(false)
+   }
+
+   try {
+
+     const shopee =
+       await api.get(
+         "/shopee/status"
+       )
+
+     setShopeeReady(
+       shopee.data === "CONECTADO"
+     )
+
+   } catch {
+
+     setShopeeReady(false)
+   }
+ }
 
   const importSales = async () => {
 
@@ -91,9 +288,9 @@ function App() {
 
       setLoadingImport(true)
 
-      await axios.post(
-        "http://localhost:8080/api/shopee/simulate-import"
-      )
+     await api.post(
+       "/api/import/sales"
+     )
 
       alert(
         "Vendas importadas com sucesso"
@@ -143,18 +340,6 @@ function App() {
 
       : []
 
-  const visibleProducts =
-
-    showAllProducts
-
-      ?
-
-      sortedProducts
-
-      :
-
-      sortedProducts.slice(0, 10)
-
   const sortedProfits =
 
     dashboard?.topProfitableItems
@@ -170,18 +355,6 @@ function App() {
         )
 
       : []
-
-  const visibleProfits =
-
-    showAllProfits
-
-      ?
-
-      sortedProfits
-
-      :
-
-      sortedProfits.slice(0, 10)
 
   const chartData = [
 
@@ -228,6 +401,13 @@ function App() {
     "#a855f7",
     "#ef4444"
   ]
+
+  const connectionButtonClass = (ready) =>
+    `w-full flex items-center gap-2 p-3 rounded-xl font-semibold transition border ${
+      ready
+        ? "bg-green-600 border-green-500 text-white hover:bg-green-500"
+        : "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700"
+    }`
 
   const DashboardPage = () => (
 
@@ -326,8 +506,9 @@ function App() {
 
             onClick={importSales}
 
-            className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl font-semibold transition"
+            className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2"
           >
+            <Download size={18} />
 
             {
 
@@ -350,7 +531,7 @@ function App() {
 
       {/* KPIS */}
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
 
         <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
 
@@ -422,22 +603,6 @@ function App() {
 
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <p className="text-slate-400">
-            Margem
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3 text-yellow-400">
-
-            {
-              dashboard?.profitMargin ?? 0
-            }%
-
-          </h2>
-
-        </div>
-
       </div>
 
       {/* GRÁFICOS */}
@@ -484,7 +649,7 @@ function App() {
 
           <h2 className="text-xl font-bold mb-5">
 
-            Top Produtos
+            Distribuição Produtos
 
           </h2>
 
@@ -535,106 +700,12 @@ function App() {
 
       </div>
 
-      {/* LISTAS */}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-8">
-
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <h2 className="text-xl font-bold mb-5">
-
-            Produtos Mais Vendidos
-
-          </h2>
-
-          <div className="space-y-3">
-
-            {
-
-              visibleProducts.map(
-                ([name, quantity]) => (
-
-                  <div
-
-                    key={name}
-
-                    className="flex justify-between bg-slate-800 p-3 rounded-xl"
-                  >
-
-                    <span>
-                      {name}
-                    </span>
-
-                    <strong>
-                      {quantity}
-                    </strong>
-
-                  </div>
-
-                )
-              )
-            }
-
-          </div>
-
-        </div>
-
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <h2 className="text-xl font-bold mb-5">
-
-            Produtos Mais Lucrativos
-
-          </h2>
-
-          <div className="space-y-3">
-
-            {
-
-              visibleProfits.map(
-                ([name, profit]) => (
-
-                  <div
-
-                    key={name}
-
-                    className="flex justify-between bg-slate-800 p-3 rounded-xl"
-                  >
-
-                    <span>
-                      {name}
-                    </span>
-
-                    <strong className="text-green-400">
-
-                      R$ {
-                        formatCurrency(
-                          profit
-                        )
-                      }
-
-                    </strong>
-
-                  </div>
-
-                )
-              )
-            }
-
-          </div>
-
-        </div>
-
-      </div>
-
     </div>
   )
 
   return (
 
     <div className="bg-slate-950 min-h-screen text-white flex">
-
-      {/* SIDEBAR */}
 
       <aside className="w-64 bg-slate-900 border-r border-slate-800 p-6">
 
@@ -644,11 +715,48 @@ function App() {
 
         </h1>
 
+        <div className="mb-8 space-y-2">
+
+          <button
+            onClick={wakeUpBackend}
+            className={connectionButtonClass(appReady)}
+          >
+            <Power size={18} />
+            <span className={`w-3 h-3 rounded-full ${
+              appReady ? "bg-white" : "bg-red-500"
+            }`}></span>
+            Ligar App
+          </button>
+
+          <button
+            onClick={connectMercadoLivre}
+            className={connectionButtonClass(mercadoLivreReady)}
+          >
+            <Store size={18} />
+            <span className={`w-3 h-3 rounded-full ${
+              mercadoLivreReady ? "bg-white" : "bg-red-500"
+            }`}></span>
+            Mercado Livre
+          </button>
+
+          <button
+            onClick={connectShopee}
+            className={connectionButtonClass(shopeeReady)}
+          >
+            <ShoppingBag size={18} />
+            <span className={`w-3 h-3 rounded-full ${
+              shopeeReady ? "bg-white" : "bg-red-500"
+            }`}></span>
+            Shopee
+          </button>
+
+        </div>
+
         <nav className="space-y-3">
 
           <Link
             to="/"
-            className={`block p-3 rounded-xl transition
+            className={`flex items-center gap-2 p-3 rounded-xl transition
 
             ${location.pathname === "/"
 
@@ -657,6 +765,7 @@ function App() {
                 : "hover:bg-slate-800"
               }`}
           >
+            <LayoutDashboard size={18} />
 
             Dashboard
 
@@ -664,7 +773,7 @@ function App() {
 
           <Link
             to="/products"
-            className={`block p-3 rounded-xl transition
+            className={`flex items-center gap-2 p-3 rounded-xl transition
 
             ${location.pathname === "/products"
 
@@ -673,6 +782,7 @@ function App() {
                 : "hover:bg-slate-800"
               }`}
           >
+            <Package size={18} />
 
             Produtos
 
@@ -680,7 +790,7 @@ function App() {
 
           <Link
             to="/sales"
-            className={`block p-3 rounded-xl transition
+            className={`flex items-center gap-2 p-3 rounded-xl transition
 
             ${location.pathname === "/sales"
 
@@ -689,32 +799,31 @@ function App() {
                 : "hover:bg-slate-800"
               }`}
           >
+            <ReceiptText size={18} />
 
             Vendas
 
           </Link>
 
-          <Link
-            to="/reports"
-            className={`block p-3 rounded-xl transition
+<Link
+  to="/reports"
+  className={`flex items-center gap-2 p-3 rounded-xl transition
 
-            ${location.pathname === "/reports"
+  ${location.pathname === "/reports"
 
-                ? "bg-slate-800"
+      ? "bg-slate-800"
 
-                : "hover:bg-slate-800"
-              }`}
-          >
+      : "hover:bg-slate-800"
+    }`}
+>
 
-            Relatórios
+  Relatórios
 
-          </Link>
+</Link>
 
         </nav>
 
       </aside>
-
-      {/* CONTEÚDO */}
 
       <main className="flex-1 p-8 overflow-auto">
 

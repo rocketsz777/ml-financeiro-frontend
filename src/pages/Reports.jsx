@@ -1,5 +1,5 @@
 import { useState } from "react"
-import axios from "axios"
+import { api } from "../services/api";
 
 function Reports() {
 
@@ -15,14 +15,12 @@ function Reports() {
 
     try {
 
-      const response = await axios.get(
-
-        `http://localhost:8080/api/reports/excel?month=${month}`,
-
-        {
-          responseType: "blob"
-        }
-      )
+     const response = await api.get(
+       `/api/reports/excel?month=${month}`,
+       {
+         responseType: "blob"
+       }
+     )
 
       const url =
         window.URL.createObjectURL(
@@ -59,9 +57,11 @@ function Reports() {
 
       setLoadingMonthly(true)
 
-      await downloadExcel(
-        "2026-05"
-      )
+     await downloadExcel(
+       new Date()
+         .toISOString()
+         .slice(0, 7)
+     )
 
     } finally {
 
