@@ -58,7 +58,29 @@ export default function Integrations() {
 
   useEffect(() => {
 
-    loadStatus();
+    let active = true;
+
+    api.get(
+      "/api/system/status"
+    )
+      .then(response => {
+
+        if (active) {
+
+          setStatus(
+            response.data
+          );
+        }
+      })
+      .catch(error => {
+
+        console.error(error);
+      });
+
+    return () => {
+
+      active = false;
+    };
 
   }, []);
 

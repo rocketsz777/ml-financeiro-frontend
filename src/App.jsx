@@ -44,6 +44,9 @@ function App() {
   const [dashboard, setDashboard] =
     useState(null)
 
+  const [salesRange, setSalesRange] =
+    useState(null)
+
   const [marketplace, setMarketplace] =
     useState("ALL")
 
@@ -166,6 +169,12 @@ function App() {
 
   useEffect(() => {
 
+    loadSalesRange()
+
+  }, [marketplace])
+
+  useEffect(() => {
+
     const params =
       new URLSearchParams(
         location.search
@@ -204,7 +213,7 @@ function App() {
 
   }, [location.search])
 
- const loadDashboard = () => {
+ function loadDashboard() {
 
    let url =
      `/api/dashboard/summary?period=${period}`
@@ -233,7 +242,64 @@ function App() {
      })
  }
 
-  const checkConnections = async () => {
+ function loadSalesRange() {
+
+   api
+     .get("/api/sales")
+
+     .then(response => {
+
+       const saleDates =
+         (response.data || [])
+
+           .filter(
+             sale =>
+               sale.soldAt
+               && (
+                 marketplace === "ALL"
+                 || sale.marketplace === marketplace
+               )
+           )
+
+           .map(
+             sale =>
+               new Date(sale.soldAt)
+           )
+
+           .filter(
+             date =>
+               !Number.isNaN(
+                 date.getTime()
+               )
+           )
+
+           .sort(
+             (a, b) =>
+               a.getTime() - b.getTime()
+           )
+
+       if (!saleDates.length) {
+
+         setSalesRange(null)
+
+         return
+       }
+
+       setSalesRange({
+         first: saleDates[0],
+         last: saleDates[saleDates.length - 1]
+       })
+
+     })
+
+     .catch(() => {
+
+       setSalesRange(null)
+
+     })
+ }
+
+  async function checkConnections() {
 
    try {
 
@@ -324,6 +390,44 @@ function App() {
       )
   }
 
+  const formatShortDate = (value) => {
+
+    return value.toLocaleDateString(
+      "pt-BR",
+      {
+        day: "2-digit",
+        month: "2-digit"
+      }
+    )
+  }
+
+  const importRangeText =
+    salesRange
+
+      ?
+
+      `Importação do dia ${formatShortDate(salesRange.first)} ao ${formatShortDate(salesRange.last)}`
+
+      :
+
+      "Nenhuma venda importada"
+
+  const shortenText = (
+    value,
+    maxLength = 46
+  ) => {
+
+    const text =
+      String(value || "")
+
+    if (text.length <= maxLength) {
+
+      return text
+    }
+
+    return `${text.slice(0, maxLength)}...`
+  }
+
   const sortedProducts =
 
     dashboard?.topSellingItems
@@ -332,22 +436,6 @@ function App() {
 
       Object.entries(
         dashboard.topSellingItems
-      )
-
-        .sort(
-          (a, b) => b[1] - a[1]
-        )
-
-      : []
-
-  const sortedProfits =
-
-    dashboard?.topProfitableItems
-
-      ?
-
-      Object.entries(
-        dashboard.topProfitableItems
       )
 
         .sort(
@@ -409,7 +497,7 @@ function App() {
         : "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700"
     }`
 
-  const DashboardPage = () => (
+  const dashboardPage = (
 
     <div>
 
@@ -433,42 +521,44 @@ function App() {
 
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col items-start sm:items-end gap-2">
 
-          <select
+          <div className="flex flex-wrap justify-start sm:justify-end gap-3">
 
-            value={marketplace}
+            <select
 
-            onChange={(e) =>
-              setMarketplace(
-                e.target.value
-              )
-            }
+              value={marketplace}
 
-            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2"
-          >
+              onChange={(e) =>
+                setMarketplace(
+                  e.target.value
+                )
+              }
 
-            <option value="ALL">
-              Todos
-            </option>
+              className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2"
+            >
 
-            <option value="MERCADO_LIVRE">
-              Mercado Livre
-            </option>
+              <option value="ALL">
+                Todos
+              </option>
 
-            <option value="SHOPEE">
-              Shopee
-            </option>
+              <option value="MERCADO_LIVRE">
+                Mercado Livre
+              </option>
 
-          </select>
+              <option value="SHOPEE">
+                Shopee
+              </option>
 
-          <button
+            </select>
 
-            onClick={() =>
-              setPeriod("WEEK")
-            }
+            <button
 
-            className={`px-4 py-2 rounded-xl font-semibold transition
+              onClick={() =>
+                setPeriod("WEEK")
+              }
+
+              className={`px-4 py-2 rounded-xl font-semibold transition
 
             ${period === "WEEK"
 
@@ -476,19 +566,19 @@ function App() {
 
                 : "bg-slate-700"
               }`}
-          >
+            >
 
-            Semanal
+              Semanal
 
-          </button>
+            </button>
 
-          <button
+            <button
 
-            onClick={() =>
-              setPeriod("MONTH")
-            }
+              onClick={() =>
+                setPeriod("MONTH")
+              }
 
-            className={`px-4 py-2 rounded-xl font-semibold transition
+              className={`px-4 py-2 rounded-xl font-semibold transition
 
             ${period === "MONTH"
 
@@ -496,34 +586,44 @@ function App() {
 
                 : "bg-slate-700"
               }`}
-          >
+            >
 
-            Mensal
+              Mensal
 
-          </button>
+            </button>
 
-          <button
+            <button
 
-            onClick={importSales}
+              onClick={importSales}
 
-            className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2"
-          >
-            <Download size={18} />
+              className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2"
+            >
+              <Download size={18} />
+
+              {
+
+                loadingImport
+
+                  ?
+
+                  "Importando..."
+
+                  :
+
+                  "Importar"
+              }
+
+            </button>
+
+          </div>
+
+          <div className="text-sm text-slate-400 text-left sm:text-right">
 
             {
-
-              loadingImport
-
-                ?
-
-                "Importando..."
-
-                :
-
-                "Importar"
+              importRangeText
             }
 
-          </button>
+          </div>
 
         </div>
 
@@ -533,7 +633,7 @@ function App() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
 
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
+        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg min-w-0 overflow-hidden">
 
           <p className="text-slate-400">
             Faturamento
@@ -655,17 +755,27 @@ function App() {
 
           <ResponsiveContainer
             width="100%"
-            height={300}
+            height={340}
           >
 
-            <PieChart>
+            <PieChart
+              margin={{
+                top: 4,
+                right: 12,
+                bottom: 6,
+                left: 12
+              }}
+            >
 
               <Pie
                 data={pieData}
                 dataKey="value"
                 nameKey="name"
-                outerRadius={100}
-                label
+                cx="50%"
+                cy="42%"
+                outerRadius={92}
+                labelLine={false}
+                label={({ value }) => value}
               >
 
                 {
@@ -690,7 +800,21 @@ function App() {
 
               <Tooltip />
 
-              <Legend />
+              <Legend
+                align="center"
+                verticalAlign="bottom"
+                iconType="square"
+                formatter={(value) => (
+
+                  <span className="text-xs text-slate-200">
+
+                    {
+                      shortenText(value)
+                    }
+
+                  </span>
+                )}
+              />
 
             </PieChart>
 
@@ -831,7 +955,7 @@ function App() {
 
           <Route
             path="/"
-            element={<DashboardPage />}
+            element={dashboardPage}
           />
 
           <Route
