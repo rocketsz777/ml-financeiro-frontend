@@ -553,43 +553,69 @@ function App() {
             </select>
 
             <button
-
-              onClick={() =>
-                setPeriod("WEEK")
-              }
-
+              onClick={() => setPeriod("DAY")}
               className={`px-4 py-2 rounded-xl font-semibold transition
-
-            ${period === "WEEK"
-
-                ? "bg-blue-600"
-
+              ${period === "DAY"
+                ? "bg-cyan-600"
                 : "bg-slate-700"
               }`}
             >
-
-              Semanal
-
+              Diário
             </button>
 
             <button
-
-              onClick={() =>
-                setPeriod("MONTH")
-              }
-
+              onClick={() => setPeriod("WEEK")}
               className={`px-4 py-2 rounded-xl font-semibold transition
-
-            ${period === "MONTH"
-
-                ? "bg-green-600"
-
+              ${period === "WEEK"
+                ? "bg-blue-600"
                 : "bg-slate-700"
               }`}
             >
+              Semanal
+            </button>
 
+            <button
+              onClick={() => setPeriod("PREVIOUS_WEEK")}
+              className={`px-4 py-2 rounded-xl font-semibold transition
+              ${period === "PREVIOUS_WEEK"
+                ? "bg-indigo-600"
+                : "bg-slate-700"
+              }`}
+            >
+              Semana Passada
+            </button>
+
+            <button
+              onClick={() => setPeriod("MONTH")}
+              className={`px-4 py-2 rounded-xl font-semibold transition
+              ${period === "MONTH"
+                ? "bg-green-600"
+                : "bg-slate-700"
+              }`}
+            >
               Mensal
+            </button>
 
+            <button
+              onClick={() => setPeriod("PREVIOUS_MONTH")}
+              className={`px-4 py-2 rounded-xl font-semibold transition
+              ${period === "PREVIOUS_MONTH"
+                ? "bg-emerald-600"
+                : "bg-slate-700"
+              }`}
+            >
+              Mês Passado
+            </button>
+
+            <button
+              onClick={() => setPeriod("YEAR")}
+              className={`px-4 py-2 rounded-xl font-semibold transition
+              ${period === "YEAR"
+                ? "bg-purple-600"
+                : "bg-slate-700"
+              }`}
+            >
+              Anual
             </button>
 
             <button

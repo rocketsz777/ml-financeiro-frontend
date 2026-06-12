@@ -256,7 +256,7 @@ function Sales() {
 
                           R$ {
                             formatCurrency(
-                              sale.grossAmount
+                              sale.netAmount
                             )
                           }
 
