@@ -9,6 +9,9 @@ function Sales() {
   const [search, setSearch] =
     useState("")
 
+  const [marketplaceFilter, setMarketplaceFilter] =
+    useState("TODOS")
+
   useEffect(() => {
 
    api
@@ -46,16 +49,29 @@ function Sales() {
 
   const filteredSales =
 
-    sales.filter(
-      sale =>
+    sales.filter(sale => {
+
+      const matchesSearch =
 
         sale.productName
           ?.toLowerCase()
-
           .includes(
             search.toLowerCase()
           )
-    )
+
+      const matchesMarketplace =
+
+        marketplaceFilter === "TODOS"
+
+          ? true
+
+          : sale.marketplace === marketplaceFilter
+
+      return (
+        matchesSearch &&
+        matchesMarketplace
+      )
+    })
 
   return (
 
@@ -99,6 +115,78 @@ function Sales() {
         />
 
       </div>
+      <div className="flex gap-2 mb-4">
+
+        <button
+
+          onClick={() =>
+            setMarketplaceFilter(
+              "TODOS"
+            )
+          }
+
+          className={`px-4 py-2 rounded-lg text-sm font-semibold
+
+            ${
+              marketplaceFilter === "TODOS"
+
+                ? "bg-blue-600 text-white"
+
+                : "bg-slate-800 text-slate-300"
+            }`}
+        >
+
+          Todos
+
+        </button>
+
+        <button
+
+          onClick={() =>
+            setMarketplaceFilter(
+              "MERCADO_LIVRE"
+            )
+          }
+
+          className={`px-4 py-2 rounded-lg text-sm font-semibold
+
+            ${
+              marketplaceFilter === "MERCADO_LIVRE"
+
+                ? "bg-yellow-500 text-black"
+
+                : "bg-slate-800 text-slate-300"
+            }`}
+        >
+
+          Mercado Livre
+
+        </button>
+
+        <button
+
+          onClick={() =>
+            setMarketplaceFilter(
+              "SHOPEE"
+            )
+          }
+
+          className={`px-4 py-2 rounded-lg text-sm font-semibold
+
+            ${
+              marketplaceFilter === "SHOPEE"
+
+                ? "bg-orange-500 text-white"
+
+                : "bg-slate-800 text-slate-300"
+            }`}
+        >
+
+          Shopee
+
+        </button>
+
+      </div>
 
       {/* TABELA */}
 
@@ -110,13 +198,17 @@ function Sales() {
 
             <tr>
 
-              <th className="text-left p-4">
-                Produto
-              </th>
+             <th className="text-left p-4">
+               Pedido
+             </th>
 
-              <th className="text-left p-4">
-                Marketplace
-              </th>
+             <th className="text-left p-4">
+               Produto
+             </th>
+
+             <th className="text-left p-4">
+               Marketplace
+             </th>
 
               <th className="text-left p-4">
                 Quantidade
@@ -202,6 +294,25 @@ function Sales() {
 
                         className="border-t border-slate-800 hover:bg-slate-800 transition"
                       >
+                      <td
+                        className="p-4 text-slate-400 text-xs"
+                      >
+                        <button
+                          title="Clique para copiar"
+                          onClick={() => navigator.clipboard.writeText(sale.orderId)}
+                          className="text-left hover:text-white transition"
+                        >
+                          <div className="leading-tight">
+                            <div>
+                              {String(sale.orderId).slice(0, 8)}
+                            </div>
+
+                            <div>
+                              {String(sale.orderId).slice(-8)}
+                            </div>
+                          </div>
+                        </button>
+                      </td>
 
                         <td className="p-4">
 
@@ -218,6 +329,16 @@ function Sales() {
                             SKU:
                             {
                               sale.sku
+                            }
+
+                            {" "}
+
+                            {
+                              sale.sku
+
+                                ? "✅"
+
+                                : "❌"
                             }
 
                           </div>

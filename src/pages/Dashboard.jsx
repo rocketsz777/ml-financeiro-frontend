@@ -198,11 +198,20 @@ function Dashboard() {
 
                 <Tooltip />
 
-                <Bar
-                  dataKey="valor"
-                  fill="#2563eb"
-                  radius={[8, 8, 0, 0]}
-                />
+                <Bar dataKey="valor">
+
+                  {
+                    chartData.map((entry, index) => (
+
+                      <Cell
+                        key={index}
+                        fill={entry.color}
+                      />
+
+                    ))
+                  }
+
+                </Bar>
 
               </BarChart>
 
