@@ -1,5 +1,5 @@
 import { useState } from "react"
-import axios from "axios"
+import { api } from "../services/api";
 
 function Reports() {
 
@@ -9,24 +9,47 @@ function Reports() {
   const [loadingWeekly, setLoadingWeekly] =
     useState(false)
 
+  const currentYearMonth = () => {
+
+    const now =
+      new Date()
+
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      label: now.toISOString()
+        .slice(0, 7)
+    }
+  }
+
   const downloadExcel = async (
-    month
+    reportType
   ) => {
 
     try {
 
-      const response = await axios.get(
+      const {
+        year,
+        month,
+        label
+      } =
+        currentYearMonth()
 
-        `http://localhost:8080/api/reports/excel?month=${month}`,
-
-        {
-          responseType: "blob"
-        }
-      )
+     const response = await api.get(
+       `/api/sales/report?year=${year}&month=${month}`,
+       {
+         responseType: "blob"
+       }
+     )
 
       const url =
         window.URL.createObjectURL(
-          new Blob([response.data])
+          new Blob(
+            [response.data],
+            {
+              type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            }
+          )
         )
 
       const link =
@@ -36,12 +59,16 @@ function Reports() {
 
       link.setAttribute(
         "download",
-        `relatorio-${month}.xlsx`
+        `relatorio-${reportType}-${label}.xlsx`
       )
 
       document.body.appendChild(link)
 
       link.click()
+
+      link.remove()
+
+      window.URL.revokeObjectURL(url)
 
     } catch (error) {
 
@@ -59,9 +86,9 @@ function Reports() {
 
       setLoadingMonthly(true)
 
-      await downloadExcel(
-        "2026-05"
-      )
+     await downloadExcel(
+       "mensal"
+     )
 
     } finally {
 
@@ -76,7 +103,7 @@ function Reports() {
       setLoadingWeekly(true)
 
       await downloadExcel(
-        "2026-05"
+        "semanal"
       )
 
     } finally {
