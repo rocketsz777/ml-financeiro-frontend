@@ -22,7 +22,9 @@ import {
   Loader2,
   Calendar,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Calculator as CalculatorIcon, // <-- Ajustado aqui para não dar conflito
+  BarChart3
 } from "lucide-react"
 
 import {
@@ -41,6 +43,7 @@ import {
 import Products from "./pages/Products"
 import Reports from "./pages/Reports"
 import Sales from "./pages/Sales"
+import Calculator from "./pages/Calculator"
 
 function App() {
 
@@ -48,6 +51,7 @@ function App() {
 
   const [dashboard, setDashboard] = useState(null)
   const [productIds, setProductIds] = useState({})
+  const [productSkus, setProductSkus] = useState({})
 
   const [globalImportRange, setGlobalImportRange] = useState(null)
   const [filteredPeriodRange, setFilteredPeriodRange] = useState(null)
@@ -151,15 +155,27 @@ function App() {
         const salesData = response.data || []
 
         const idMap = {}
+        const skuMap = {}
         salesData.forEach(sale => {
+
           if (sale.productName) {
-            const identificationId = sale.marketplaceItemId || "";
+
+            const identificationId =
+              sale.marketplaceItemId || ""
+
             if (identificationId) {
-              idMap[sale.productName] = String(identificationId);
+              idMap[sale.productName] =
+                String(identificationId)
+            }
+
+            if (sale.sku) {
+              skuMap[sale.productName] =
+                sale.sku
             }
           }
         })
         setProductIds(idMap)
+        setProductSkus(skuMap)
 
         // 1. IMPORTAÇÃO GLOBAL ABSOLUTA
         const allDates = salesData
@@ -188,16 +204,62 @@ function App() {
             return targetDate.toLocaleDateString("pt-BR") === now.toLocaleDateString("pt-BR")
           }
           if (period === "WEEK") {
-            const sevenDaysAgo = new Date()
-            sevenDaysAgo.setDate(now.getDate() - 7)
-            return targetDate >= sevenDaysAgo && targetDate <= now
+
+            const startOfWeek = new Date(now)
+
+            const day =
+              startOfWeek.getDay() === 0
+                ? 7
+                : startOfWeek.getDay()
+
+            startOfWeek.setDate(
+              startOfWeek.getDate() - day + 1
+            )
+
+            startOfWeek.setHours(
+              0, 0, 0, 0
+            )
+
+            return (
+              targetDate >= startOfWeek &&
+              targetDate <= now
+            )
           }
           if (period === "PREVIOUS_WEEK") {
-            const fourteenDaysAgo = new Date()
-            fourteenDaysAgo.setDate(now.getDate() - 14)
-            const sevenDaysAgo = new Date()
-            sevenDaysAgo.setDate(now.getDate() - 7)
-            return targetDate >= fourteenDaysAgo && targetDate < sevenDaysAgo
+
+            const startOfCurrentWeek = new Date(now)
+
+            const day =
+              startOfCurrentWeek.getDay() === 0
+                ? 7
+                : startOfCurrentWeek.getDay()
+
+            startOfCurrentWeek.setDate(
+              startOfCurrentWeek.getDate() - day + 1
+            )
+
+            startOfCurrentWeek.setHours(
+              0, 0, 0, 0
+            )
+
+            const startOfPreviousWeek =
+              new Date(startOfCurrentWeek)
+
+            startOfPreviousWeek.setDate(
+              startOfPreviousWeek.getDate() - 7
+            )
+
+            const endOfPreviousWeek =
+              new Date(startOfCurrentWeek)
+
+            endOfPreviousWeek.setMilliseconds(
+              endOfPreviousWeek.getMilliseconds() - 1
+            )
+
+            return (
+              targetDate >= startOfPreviousWeek &&
+              targetDate <= endOfPreviousWeek
+            )
           }
           if (period === "MONTH") {
             return targetDate.getMonth() === now.getMonth() && targetDate.getFullYear() === now.getFullYear()
@@ -252,7 +314,8 @@ function App() {
           totalRevenue: localRevenue,
           totalCost: localCost,
           totalProfit: localProfit,
-          unitsSold: uniqueOrders.size, // Conta vendas únicas de forma correta
+          salesCount: uniqueOrders.size,
+          unitsSold: uniqueOrders.size,
           topSellingItems: localTopSelling,
           productCostBreakdown: localCostBreakdown,
           topProfitableItems: localTopProfitable,
@@ -357,13 +420,48 @@ function App() {
 
     if (period === "DAY") return `${format(now)} até ${format(now)}`
     if (period === "WEEK") {
-      const past = new Date(); past.setDate(now.getDate() - 7)
-      return `${format(past)} até ${format(now)}`
+
+      const startOfWeek = new Date(now)
+
+      const day =
+        startOfWeek.getDay() === 0
+          ? 7
+          : startOfWeek.getDay()
+
+      startOfWeek.setDate(
+        startOfWeek.getDate() - day + 1
+      )
+
+      return `${format(startOfWeek)} até ${format(now)}`
     }
     if (period === "PREVIOUS_WEEK") {
-      const start = new Date(); start.setDate(now.getDate() - 14)
-      const end = new Date(); end.setDate(now.getDate() - 7)
-      return `${format(start)} até ${format(end)}`
+
+      const startOfCurrentWeek = new Date(now)
+
+      const day =
+        startOfCurrentWeek.getDay() === 0
+          ? 7
+          : startOfCurrentWeek.getDay()
+
+      startOfCurrentWeek.setDate(
+        startOfCurrentWeek.getDate() - day + 1
+      )
+
+      const startOfPreviousWeek =
+        new Date(startOfCurrentWeek)
+
+      startOfPreviousWeek.setDate(
+        startOfPreviousWeek.getDate() - 7
+      )
+
+      const endOfPreviousWeek =
+        new Date(startOfCurrentWeek)
+
+      endOfPreviousWeek.setDate(
+        endOfPreviousWeek.getDate() - 1
+      )
+
+      return `${format(startOfPreviousWeek)} até ${format(endOfPreviousWeek)}`
     }
     if (period === "MONTH") {
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -432,7 +530,7 @@ function App() {
               className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm"
             >
               <option value="ALL">Todos</option>
-              <option value="MERCADO_LIVRE">Marketplace Livre</option>
+              <option value="MERCADO_LIVRE">Mercado Livre</option>
               <option value="SHOPEE">Shopee</option>
             </select>
 
@@ -583,6 +681,7 @@ function App() {
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400 text-[11px] uppercase tracking-wider">
                     <th className="pb-2.5 font-semibold">Produto</th>
+                    <th className="pb-2.5 font-semibold text-center">SKU</th>
                     <th className="pb-2.5 font-semibold text-center">Unidades</th>
                     <th className="pb-2.5 font-semibold text-right">Custo Unit.</th>
                     <th className="pb-2.5 font-semibold text-right">Custo Total</th>
@@ -597,6 +696,7 @@ function App() {
                       const unitCost = quantity > 0 ? totalCostOfItem / quantity : 0
                       const totalProfitOfItem = dashboard?.topProfitableItems?.[name] || 0
                       const currentSaleId = productIds[name] || ""
+                      const currentSku = productSkus[name] || "-"
 
                       return (
                         <tr key={index} className="hover:bg-slate-800/20 transition-colors">
@@ -618,15 +718,23 @@ function App() {
                               )}
                             </div>
                           </td>
+
+                          <td className="py-3 text-center text-slate-300 font-mono pt-5">
+                            {currentSku}
+                          </td>
+
                           <td className="py-3 text-center font-bold text-white pt-5">
                             {quantity} un
                           </td>
+
                           <td className="py-3 text-right text-amber-400 font-medium pt-5">
                             R$ {formatCurrency(unitCost)}
                           </td>
+
                           <td className="py-3 text-right text-red-400 font-semibold pt-5">
                             R$ {formatCurrency(totalCostOfItem)}
                           </td>
+
                           <td className="py-3 text-right text-blue-400 font-semibold pt-5">
                             R$ {formatCurrency(totalProfitOfItem)}
                           </td>
@@ -635,7 +743,7 @@ function App() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="5" className="py-10 text-center text-slate-500 italic">
+                      <td colSpan="6" className="py-10 text-center text-slate-500 italic">
                         Nenhum produto vendido no período selecionado.
                       </td>
                     </tr>
@@ -836,7 +944,19 @@ function App() {
               location.pathname === "/reports" ? "bg-slate-800" : "hover:bg-slate-800"
             }`}
           >
+            <BarChart3 size={18} />
             Relatórios
+          </Link>
+          <Link
+            to="/calculator"
+            className={`flex items-center gap-2 p-3 rounded-xl transition ${
+              location.pathname === "/calculator"
+                ? "bg-slate-800"
+                : "hover:bg-slate-800"
+            }`}
+          >
+            <CalculatorIcon size={18} /> {/* <-- Atualizado aqui */}
+            <span>Calculadora</span>
           </Link>
         </nav>
       </aside>
@@ -847,6 +967,7 @@ function App() {
           <Route path="/products" element={<Products />} />
           <Route path="/sales" element={<Sales />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/calculator" element={<Calculator />} />
         </Routes>
       </main>
     </div>
