@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
-
-import axios from "axios"
+import { api } from "./services/api";
 
 import {
   Routes,
@@ -8,6 +7,27 @@ import {
   Link,
   useLocation
 } from "react-router-dom"
+
+import {
+  Download,
+  LayoutDashboard,
+  Package,
+  Power,
+  ReceiptText,
+  ShoppingBag,
+  Store,
+  DollarSign,
+  TrendingUp,
+  ShoppingCart,
+  Loader2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Calculator as CalculatorIcon,
+  BarChart3,
+  Menu, // <-- Adicionado para o botão do menu mobile
+  X     // <-- Adicionado para o botão de fechar o menu
+} from "lucide-react"
 
 import {
   BarChart,
@@ -19,731 +39,963 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  Legend
+  Cell
 } from "recharts"
 
 import Products from "./pages/Products"
 import Reports from "./pages/Reports"
 import Sales from "./pages/Sales"
+import Calculator from "./pages/Calculator"
 
 function App() {
 
-  const location =
-    useLocation()
+  const location = useLocation()
 
-  const [dashboard, setDashboard] =
-    useState(null)
+  const [dashboard, setDashboard] = useState(null)
+  const [productIds, setProductIds] = useState({})
+  const [productSkus, setProductSkus] = useState({})
 
-  const [marketplace, setMarketplace] =
-    useState("ALL")
+  const [globalImportRange, setGlobalImportRange] = useState(null)
+  const [filteredPeriodRange, setFilteredPeriodRange] = useState(null)
 
-  const [period, setPeriod] =
-    useState("MONTH")
+  const [marketplace, setMarketplace] = useState("ALL")
+  const [period, setPeriod] = useState("MONTH")
 
-  const [showAllProducts, setShowAllProducts] =
-    useState(false)
+  const [loadingImport, setLoadingImport] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
-  const [showAllProfits, setShowAllProfits] =
-    useState(false)
+  const [loadingApp, setLoadingApp] = useState(false)
+  const [loadingML, setLoadingML] = useState(false)
+  const [loadingShopee, setLoadingShopee] = useState(false)
 
-  const [loadingImport, setLoadingImport] =
-    useState(false)
+  const [appReady, setAppReady] = useState(false)
+  const [mercadoLivreReady, setMercadoLivreReady] = useState(false)
+  const [shopeeReady, setShopeeReady] = useState(false)
+
+  // 📱 Estado para controlar se o menu lateral está aberto no celular
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const wakeUpBackend = async () => {
+    try {
+      setLoadingApp(true)
+      await new Promise(resolve => setTimeout(resolve, 600))
+
+      const health = await api.get("/health")
+      const isOnline = health.data?.status === "UP"
+
+      setAppReady(isOnline)
+      await checkConnections()
+      return isOnline
+    } catch {
+      setAppReady(false)
+      return false
+    } finally {
+      setLoadingApp(false)
+    }
+  }
+
+  const connectMercadoLivre = async () => {
+    try {
+      setLoadingML(true)
+      const appOnline = await wakeUpBackend()
+      if (!appOnline) return
+
+      const response = await api.get("/oauth/mercadolivre/login")
+      window.location.href = response.data
+    } catch (error) {
+      console.error(error)
+      setMercadoLivreReady(false)
+    } finally {
+      setLoadingML(false)
+    }
+  }
+
+  const connectShopee = async () => {
+    try {
+      setLoadingShopee(true)
+      const appOnline = await wakeUpBackend()
+      if (!appOnline) return
+
+      const response = await api.get("/shopee/login")
+      window.location.href = response.data
+    } catch (error) {
+      console.error(error)
+      setShopeeReady(false)
+    } finally {
+      setLoadingShopee(false)
+    }
+  }
 
   useEffect(() => {
-
+    setCurrentPage(1)
     loadDashboard()
-
+    checkConnections()
+    loadSalesRange()
   }, [marketplace, period])
 
-  const loadDashboard = () => {
-
-    let url =
-      `http://localhost:8080/api/dashboard/summary?period=${period}`
-
+  function loadDashboard() {
+    let url = `/api/dashboard/summary?period=${period}`
     if (marketplace !== "ALL") {
-
-      url +=
-        `&marketplace=${marketplace}`
+      url += `&marketplace=${marketplace}`
     }
 
-    axios
+    api
       .get(url)
-
       .then(response => {
-
-        setDashboard(
-          response.data
-        )
-
+        setDashboard(prev => ({
+          ...prev,
+          totalExtraCosts: response.data?.totalExtraCosts || prev?.totalExtraCosts || 0
+        }))
       })
-
       .catch(error => {
-
         console.error(error)
-
       })
   }
 
-  const importSales = async () => {
+  function loadSalesRange() {
+    api
+      .get("/api/sales")
+      .then(response => {
+        const salesData = response.data || []
+
+        const idMap = {}
+        const skuMap = {}
+        salesData.forEach(sale => {
+
+          if (sale.productName) {
+
+            const identificationId =
+              sale.marketplaceItemId || ""
+
+            if (identificationId) {
+              idMap[sale.productName] =
+                String(identificationId)
+            }
+
+            if (sale.sku) {
+              skuMap[sale.productName] =
+                sale.sku
+            }
+          }
+        })
+        setProductIds(idMap)
+        setProductSkus(skuMap)
+
+        const allDates = salesData
+          .filter(sale => sale.soldAt)
+          .map(sale => new Date(sale.soldAt))
+          .filter(d => !isNaN(d.getTime()))
+          .sort((a, b) => a.getTime() - b.getTime())
+
+        if (allDates.length > 0) {
+          setGlobalImportRange({
+            first: allDates[0],
+            last: allDates[allDates.length - 1]
+          })
+        }
+
+        const now = new Date()
+        const filteredSales = salesData.filter(sale => {
+          if (!sale.soldAt) return false
+          if (marketplace !== "ALL" && sale.marketplace !== marketplace) return false
+
+          const targetDate = new Date(sale.soldAt)
+          if (isNaN(targetDate.getTime())) return false
+
+          if (period === "DAY") {
+            return targetDate.toLocaleDateString("pt-BR") === now.toLocaleDateString("pt-BR")
+          }
+          if (period === "WEEK") {
+
+            const startOfWeek = new Date(now)
+
+            const day =
+              startOfWeek.getDay() === 0
+                ? 7
+                : startOfWeek.getDay()
+
+            startOfWeek.setDate(
+              startOfWeek.getDate() - day + 1
+            )
+
+            startOfWeek.setHours(
+              0, 0, 0, 0
+            )
+
+            return (
+              targetDate >= startOfWeek &&
+              targetDate <= now
+            )
+          }
+          if (period === "PREVIOUS_WEEK") {
+
+            const startOfCurrentWeek = new Date(now)
+
+            const day =
+              startOfCurrentWeek.getDay() === 0
+                ? 7
+                : startOfCurrentWeek.getDay()
+
+            startOfCurrentWeek.setDate(
+              startOfCurrentWeek.getDate() - day + 1
+            )
+
+            startOfCurrentWeek.setHours(
+              0, 0, 0, 0
+            )
+
+            const startOfPreviousWeek =
+              new Date(startOfCurrentWeek)
+
+            startOfPreviousWeek.setDate(
+              startOfPreviousWeek.getDate() - 7
+            )
+
+            const endOfPreviousWeek =
+              new Date(startOfCurrentWeek)
+
+            endOfPreviousWeek.setMilliseconds(
+              endOfPreviousWeek.getMilliseconds() - 1
+            )
+
+            return (
+              targetDate >= startOfPreviousWeek &&
+              targetDate <= endOfPreviousWeek
+            )
+          }
+          if (period === "MONTH") {
+            return targetDate.getMonth() === now.getMonth() && targetDate.getFullYear() === now.getFullYear()
+          }
+          if (period === "PREVIOUS_MONTH") {
+            const currentMonth = now.getMonth()
+            let expectedMonth = currentMonth - 1
+            let expectedYear = now.getFullYear()
+            if (expectedMonth < 0) {
+              expectedMonth = 11
+              expectedYear -= 1
+            }
+            return targetDate.getMonth() === expectedMonth && targetDate.getFullYear() === expectedYear
+          }
+          if (period === "YEAR") {
+            return targetDate.getFullYear() === now.getFullYear()
+          }
+          return true
+        })
+
+        let localRevenue = 0
+        let localCost = 0
+        let localProfit = 0
+        const uniqueOrders = new Set()
+
+        const localTopSelling = {}
+        const localCostBreakdown = {}
+        const localTopProfitable = {}
+
+        filteredSales.forEach((sale, index) => {
+          const name = sale.productName || "Item sem nome"
+          const qty = Number(sale.quantity || 0)
+          const rev = Number(sale.netAmount || 0)
+          const cst = Number(sale.productCost || 0) * qty
+          const prf = Number(sale.profit || 0)
+
+          localRevenue += rev
+          localCost += cst
+          localProfit += prf
+
+          uniqueOrders.add(sale.orderId || `fallback-${index}`)
+
+          localTopSelling[name] = (localTopSelling[name] || 0) + qty
+          localCostBreakdown[name] = (localCostBreakdown[name] || 0) + cst
+          localTopProfitable[name] = (localTopProfitable[name] || 0) + prf
+        })
+
+        setDashboard(prev => ({
+          ...prev,
+          totalRevenue: localRevenue,
+          totalCost: localCost,
+          totalProfit: localProfit,
+          salesCount: uniqueOrders.size,
+          unitsSold: uniqueOrders.size,
+          topSellingItems: localTopSelling,
+          productCostBreakdown: localCostBreakdown,
+          topProfitableItems: localTopProfitable,
+          totalExtraCosts: prev?.totalExtraCosts || 0
+        }))
+
+        const saleDates = filteredSales
+          .map(sale => new Date(sale.soldAt))
+          .sort((a, b) => a.getTime() - b.getTime())
+
+        if (saleDates.length > 0) {
+          setFilteredPeriodRange({
+            first: saleDates[0],
+            last: saleDates[saleDates.length - 1]
+          })
+        } else {
+          setFilteredPeriodRange(null)
+        }
+      })
+      .catch(() => {
+        setGlobalImportRange(null)
+        setFilteredPeriodRange(null)
+      })
+  }
+
+  async function checkConnections() {
+    try {
+      const health = await api.get("/health")
+      setAppReady(health.data?.status === "UP")
+    } catch {
+      setAppReady(false)
+    }
 
     try {
+      const ml = await api.get("/api/mercadolivre/status")
+      setMercadoLivreReady(ml.data === "CONECTADO")
+    } catch {
+      setMercadoLivreReady(false)
+    }
 
+    try {
+      const shopee = await api.get("/shopee/status")
+      setShopeeReady(shopee.data === "CONECTADO")
+    } catch {
+      setShopeeReady(false)
+    }
+  }
+
+  const importSales = async () => {
+    try {
       setLoadingImport(true)
-
-      await axios.post(
-        "http://localhost:8080/api/shopee/simulate-import"
-      )
-
-      alert(
-        "Vendas importadas com sucesso"
-      )
-
+      await api.post("/api/import/sales")
+      alert("Importação de vendas concluída com sucesso!")
       loadDashboard()
-
+      loadSalesRange()
     } catch (error) {
-
       console.error(error)
-
-      alert(
-        "Erro ao importar vendas"
-      )
-
+      alert("Erro ao realizar a importação das vendas.")
     } finally {
-
       setLoadingImport(false)
     }
   }
 
   const formatCurrency = (value) => {
-
-    return Number(value || 0)
-      .toLocaleString(
-        "pt-BR",
-        {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }
-      )
+    return Number(value || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
   }
 
-  const sortedProducts =
+  const formatShortDate = (value) => {
+    if (!value) return ""
+    const d = new Date(value)
+    if (isNaN(d.getTime())) return ""
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit"
+    })
+  }
 
-    dashboard?.topSellingItems
-
-      ?
-
-      Object.entries(
-        dashboard.topSellingItems
-      )
-
-        .sort(
-          (a, b) => b[1] - a[1]
-        )
-
-      : []
-
-  const visibleProducts =
-
-    showAllProducts
-
-      ?
-
-      sortedProducts
-
-      :
-
-      sortedProducts.slice(0, 10)
-
-  const sortedProfits =
-
-    dashboard?.topProfitableItems
-
-      ?
-
-      Object.entries(
-        dashboard.topProfitableItems
-      )
-
-        .sort(
-          (a, b) => b[1] - a[1]
-        )
-
-      : []
-
-  const visibleProfits =
-
-    showAllProfits
-
-      ?
-
-      sortedProfits
-
-      :
-
-      sortedProfits.slice(0, 10)
-
-  const chartData = [
-
-    {
-      name: "Faturamento",
-      valor: Number(
-        dashboard?.totalRevenue || 0
-      )
-    },
-
-    {
-      name: "Custos",
-      valor: Number(
-        dashboard?.totalCost || 0
-      )
-    },
-
-    {
-      name: "Lucro",
-      valor: Number(
-        dashboard?.totalProfit || 0
-      )
+  const getDynamicPeriodText = () => {
+    if (filteredPeriodRange?.first && filteredPeriodRange?.last) {
+      return `${filteredPeriodRange.first.toLocaleDateString("pt-BR")} até ${filteredPeriodRange.last.toLocaleDateString("pt-BR")}`
     }
 
-  ]
+    const now = new Date()
+    const format = (d) => d.toLocaleDateString("pt-BR")
 
-  const pieData =
+    if (period === "DAY") return `${format(now)} até ${format(now)}`
+    if (period === "WEEK") {
 
-    sortedProducts
-      .slice(0, 5)
+      const startOfWeek = new Date(now)
 
-      .map(
-        ([name, quantity]) => ({
+      const day =
+        startOfWeek.getDay() === 0
+          ? 7
+          : startOfWeek.getDay()
 
-          name,
-          value: quantity
-        })
+      startOfWeek.setDate(
+        startOfWeek.getDate() - day + 1
       )
 
-  const COLORS = [
-    "#3b82f6",
-    "#22c55e",
-    "#f59e0b",
-    "#a855f7",
-    "#ef4444"
+      return `${format(startOfWeek)} até ${format(now)}`
+    }
+    if (period === "PREVIOUS_WEEK") {
+
+      const startOfCurrentWeek = new Date(now)
+
+      const day =
+        startOfCurrentWeek.getDay() === 0
+          ? 7
+          : startOfCurrentWeek.getDay()
+
+      startOfCurrentWeek.setDate(
+        startOfCurrentWeek.getDate() - day + 1
+      )
+
+      const startOfPreviousWeek =
+        new Date(startOfCurrentWeek)
+
+      startOfPreviousWeek.setDate(
+        startOfPreviousWeek.getDate() - 7
+      )
+
+      const endOfPreviousWeek =
+        new Date(startOfCurrentWeek)
+
+      endOfPreviousWeek.setDate(
+        endOfPreviousWeek.getDate() - 1
+      )
+
+      return `${format(startOfPreviousWeek)} até ${format(endOfPreviousWeek)}`
+    }
+    if (period === "MONTH") {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      return `${format(firstDay)} até ${format(now)}`
+    }
+    if (period === "PREVIOUS_MONTH") {
+      const firstDayPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const lastDayPrev = new Date(now.getFullYear(), now.getMonth(), 0)
+      return `${format(firstDayPrev)} até ${format(lastDayPrev)}`
+    }
+    if (period === "YEAR") {
+      const firstDayYear = new Date(now.getFullYear(), 0, 1)
+      return `${format(firstDayYear)} até ${format(now)}`
+    }
+    return "Sem registros"
+  }
+
+  const importRangeText = globalImportRange?.first
+    ? `Importação do dia ${formatShortDate(globalImportRange.first)} ao ${formatShortDate(globalImportRange.last)}`
+    : "Processando dados..."
+
+  const shortenText = (value, maxLength = 46) => {
+    const text = String(value || "")
+    if (text.length <= maxLength) return text
+    return `${text.slice(0, maxLength)}...`
+  }
+
+  const sortedProducts = dashboard?.topSellingItems
+    ? Object.entries(dashboard.topSellingItems).sort((a, b) => b[1] - a[1])
+    : []
+
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage) || 1
+  const paginatedProducts = sortedProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  const chartData = [
+    { name: "Faturamento", valor: Number(dashboard?.totalRevenue || 0), color: "#22c55e" },
+    { name: "Custos", valor: Number(dashboard?.totalCost || 0), color: "#ef4444" },
+    { name: "Custos Extras", valor: Number(dashboard?.totalExtraCosts || 0), color: "#f59e0b" },
+    { name: "Lucro", valor: Number(dashboard?.totalProfit || 0), color: "#3b82f6" }
   ]
 
-  const DashboardPage = () => (
+  const pieData = sortedProducts.slice(0, 5).map(([name, quantity]) => ({
+    name,
+    value: quantity
+  }))
 
+  const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#ef4444"]
+
+  const dashboardPage = (
     <div>
-
       {/* TOPO */}
-
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
         <div>
-
-          <h1 className="text-4xl font-bold">
-
-            Dashboard
-
-          </h1>
-
-          <p className="text-slate-400 mt-2">
-
-            Rocket Imports Gestão
-
-          </p>
-
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-sm text-slate-400 mt-1">Rocket Imports Gestão</p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap justify-start sm:justify-end gap-2.5 w-full sm:w-auto">
+            <select
+              value={marketplace}
+              onChange={(e) => setMarketplace(e.target.value)}
+              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm flex-1 sm:flex-initial"
+            >
+              <option value="ALL">Todos</option>
+              <option value="MERCADO_LIVRE">Mercado Livre</option>
+              <option value="SHOPEE">Shopee</option>
+            </select>
 
-          <select
-
-            value={marketplace}
-
-            onChange={(e) =>
-              setMarketplace(
-                e.target.value
-              )
-            }
-
-            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2"
-          >
-
-            <option value="ALL">
-              Todos
-            </option>
-
-            <option value="MERCADO_LIVRE">
-              Mercado Livre
-            </option>
-
-            <option value="SHOPEE">
-              Shopee
-            </option>
-
-          </select>
-
-          <button
-
-            onClick={() =>
-              setPeriod("WEEK")
-            }
-
-            className={`px-4 py-2 rounded-xl font-semibold transition
-
-            ${period === "WEEK"
-
-                ? "bg-blue-600"
-
-                : "bg-slate-700"
+            <button
+              onClick={() => setPeriod("DAY")}
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
+                period === "DAY" ? "bg-cyan-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
-          >
+            >
+              Diário
+            </button>
 
-            Semanal
-
-          </button>
-
-          <button
-
-            onClick={() =>
-              setPeriod("MONTH")
-            }
-
-            className={`px-4 py-2 rounded-xl font-semibold transition
-
-            ${period === "MONTH"
-
-                ? "bg-green-600"
-
-                : "bg-slate-700"
+            <button
+              onClick={() => setPeriod("WEEK")}
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
+                period === "WEEK" ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
-          >
+            >
+              Semanal
+            </button>
 
-            Mensal
+            <button
+              onClick={() => setPeriod("PREVIOUS_WEEK")}
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
+                period === "PREVIOUS_WEEK" ? "bg-indigo-600 text-white" : "bg-slate-700 text-slate-200"
+              }`}
+            >
+              Semana Passada
+            </button>
 
-          </button>
+            <button
+              onClick={() => setPeriod("MONTH")}
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
+                period === "MONTH" ? "bg-green-600 text-white" : "bg-slate-700 text-slate-200"
+              }`}
+            >
+              Mensal
+            </button>
 
-          <button
+            <button
+              onClick={() => setPeriod("PREVIOUS_MONTH")}
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
+                period === "PREVIOUS_MONTH" ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-200"
+              }`}
+            >
+              Mês Passado
+            </button>
 
-            onClick={importSales}
+            <button
+              onClick={() => setPeriod("YEAR")}
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
+                period === "YEAR" ? "bg-purple-600 text-white" : "bg-slate-700 text-slate-200"
+              }`}
+            >
+              Anual
+            </button>
 
-            className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl font-semibold transition"
-          >
+            <button
+              onClick={importSales}
+              className="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-sm rounded-xl font-semibold transition flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
+            >
+              <Download size={16} />
+              {loadingImport ? "Importando..." : "Importar"}
+            </button>
+          </div>
 
-            {
-
-              loadingImport
-
-                ?
-
-                "Importando..."
-
-                :
-
-                "Importar"
-            }
-
-          </button>
-
+          <div className="text-xs text-slate-400 text-left sm:text-right flex flex-wrap items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-1">
+              <Calendar size={13} className="text-slate-500" />
+              <span>Período: {getDynamicPeriodText()}</span>
+            </div>
+            <span className="hidden sm:inline text-slate-600 mx-1">|</span>
+            <span>{importRangeText}</span>
+          </div>
         </div>
-
       </div>
 
       {/* KPIS */}
-
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <p className="text-slate-400">
-            Faturamento
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3 text-green-400">
-
-            R$ {
-              formatCurrency(
-                dashboard?.totalRevenue
-              )
-            }
-
-          </h2>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-start">
+          <div>
+            <p className="text-xs text-slate-400">Faturamento</p>
+            <h2 className="text-2xl font-bold mt-1.5 text-green-400">
+              R$ {formatCurrency(dashboard?.totalRevenue)}
+            </h2>
+          </div>
+          <div className="p-2 bg-green-500/10 rounded-full text-green-500 flex-shrink-0">
+            <DollarSign size={18} />
+          </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <p className="text-slate-400">
-            Custos
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3 text-red-400">
-
-            R$ {
-              formatCurrency(
-                dashboard?.totalCost
-              )
-            }
-
-          </h2>
-
+        <div className="bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-start">
+          <div className="space-y-2 w-full">
+            <div>
+              <p className="text-xs text-slate-400">Custos</p>
+              <h2 className="text-2xl font-bold mt-0.5 text-red-500">
+                R$ {formatCurrency(dashboard?.totalCost)}
+              </h2>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Custos Extras</p>
+              <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                <h2 className="text-2xl font-bold text-amber-500">
+                  R$ {formatCurrency(dashboard?.totalExtraCosts)}
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div className="p-2 bg-red-500/10 rounded-full text-red-500 flex-shrink-0">
+            <Package size={18} />
+          </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <p className="text-slate-400">
-            Lucro
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3 text-blue-400">
-
-            R$ {
-              formatCurrency(
-                dashboard?.totalProfit
-              )
-            }
-
-          </h2>
-
+        <div className="bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-start">
+          <div>
+            <p className="text-xs text-slate-400">Lucro</p>
+            <h2 className="text-2xl font-bold mt-1.5 text-blue-500">
+              R$ {formatCurrency(dashboard?.totalProfit)}
+            </h2>
+          </div>
+          <div className="p-2 bg-blue-500/10 rounded-full text-blue-500 flex-shrink-0">
+            <TrendingUp size={18} />
+          </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <p className="text-slate-400">
-            Vendas
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3">
-
-            {
-              dashboard?.unitsSold ?? 0
-            }
-
-          </h2>
-
+        <div className="bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-start">
+          <div>
+            <p className="text-xs text-slate-400">Vendas</p>
+            <h2 className="text-2xl font-bold mt-1.5 text-white">
+              {dashboard?.salesCount ?? 0}
+            </h2>
+          </div>
+          <div className="p-2 bg-purple-500/10 rounded-full text-purple-500 flex-shrink-0">
+            <ShoppingCart size={18} />
+          </div>
         </div>
-
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <p className="text-slate-400">
-            Margem
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3 text-yellow-400">
-
-            {
-              dashboard?.profitMargin ?? 0
-            }%
-
-          </h2>
-
-        </div>
-
       </div>
 
-      {/* GRÁFICOS */}
+      {/* BLOCO CENTRAL */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6 items-start">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-8">
+        {/* ESQUERDA: Produtos Vendidos */}
+        <div className="bg-slate-900 p-5 rounded-xl shadow-lg flex flex-col justify-between min-h-[636px]">
+          <div>
+            <h2 className="text-lg font-bold mb-4">Produtos Vendidos no Período</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 text-[11px] uppercase tracking-wider">
+                    <th className="pb-2.5 font-semibold">Produto</th>
+                    <th className="pb-2.5 font-semibold text-center">SKU</th>
+                    <th className="pb-2.5 font-semibold text-center">Unidades</th>
+                    <th className="pb-2.5 font-semibold text-right">Custo Unit.</th>
+                    <th className="pb-2.5 font-semibold text-right">Custo Total</th>
+                    <th className="pb-2.5 font-semibold text-right">Lucro Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/30 text-xs">
+                  {paginatedProducts.length > 0 ? (
+                    paginatedProducts.map(([name, quantity], index) => {
 
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
+                      const totalCostOfItem = dashboard?.productCostBreakdown?.[name] || 0
+                      const unitCost = quantity > 0 ? totalCostOfItem / quantity : 0
+                      const totalProfitOfItem = dashboard?.topProfitableItems?.[name] || 0
+                      const currentSaleId = productIds[name] || ""
+                      const currentSku = productSkus[name] || "-"
 
-          <h2 className="text-xl font-bold mb-5">
+                      return (
+                        <tr key={index} className="hover:bg-slate-800/20 transition-colors">
+                          <td className="py-3 pr-2 text-slate-300 font-medium max-w-[180px]">
+                            <div className="flex flex-col">
+                              <span className="truncate" title={name}>
+                                {shortenText(name, 30)}
+                              </span>
+                              {currentSaleId && (
+                                <span
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(currentSaleId);
+                                  }}
+                                  className="text-[10px] text-slate-500 hover:text-slate-400 cursor-pointer mt-0.5 w-max font-mono tracking-wider hover:underline select-none"
+                                  title="Clique para copiar"
+                                >
+                                  {currentSaleId.length > 12 ? `${currentSaleId.slice(0, 10)}...` : currentSaleId}
+                                </span>
+                              )}
+                            </div>
+                          </td>
 
-            Performance Financeira
+                          <td className="py-3 text-center text-slate-300 font-mono pt-5">
+                            {currentSku}
+                          </td>
 
-          </h2>
+                          <td className="py-3 text-center font-bold text-white pt-5">
+                            {quantity} un
+                          </td>
 
-          <ResponsiveContainer
-            width="100%"
-            height={300}
-          >
+                          <td className="py-3 text-right text-amber-400 font-medium pt-5">
+                            R$ {formatCurrency(unitCost)}
+                          </td>
 
-            <BarChart
-              data={chartData}
-            >
+                          <td className="py-3 text-right text-red-400 font-semibold pt-5">
+                            R$ {formatCurrency(totalCostOfItem)}
+                          </td>
 
-              <CartesianGrid strokeDasharray="3 3" />
+                          <td className="py-3 text-right text-blue-400 font-semibold pt-5">
+                            R$ {formatCurrency(totalProfitOfItem)}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="py-10 text-center text-slate-500 italic">
+                        Nenhum produto vendido no período selecionado.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              <XAxis dataKey="name" />
-
-              <YAxis />
-
-              <Tooltip />
-
-              <Bar
-                dataKey="valor"
-                fill="#22c55e"
-              />
-
-            </BarChart>
-
-          </ResponsiveContainer>
-
-        </div>
-
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <h2 className="text-xl font-bold mb-5">
-
-            Top Produtos
-
-          </h2>
-
-          <ResponsiveContainer
-            width="100%"
-            height={300}
-          >
-
-            <PieChart>
-
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={100}
-                label
+          <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-800 text-[11px]">
+            <span className="text-slate-400">
+              Mostrando {sortedProducts.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, sortedProducts.length)} de {sortedProducts.length} itens
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition text-white"
               >
-
-                {
-
-                  pieData.map(
-                    (_, index) => (
-
-                      <Cell
-                        key={index}
-                        fill={
-                          COLORS[
-                          index % COLORS.length
-                          ]
-                        }
-                      />
-
-                    )
-                  )
-                }
-
-              </Pie>
-
-              <Tooltip />
-
-              <Legend />
-
-            </PieChart>
-
-          </ResponsiveContainer>
-
+                <ChevronLeft size={14} />
+              </button>
+              <span className="text-slate-300 px-2 font-medium">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition text-white"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
         </div>
 
-      </div>
+        {/* DIREITA: Coluna de Gráficos */}
+        <div className="space-y-4 w-full">
+          <div className="bg-slate-900 p-5 rounded-xl shadow-lg flex flex-col justify-between min-h-[350px]">
+            <div>
+              <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
+                <h2 className="text-base font-bold">Distribuição Produtos</h2>
+                <h3 className="font-bold text-sm text-slate-300 sm:pr-2">Produtos Mais Vendidos</h3>
+              </div>
 
-      {/* LISTAS */}
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="w-full sm:w-1/2">
+                  <ResponsiveContainer width="100%" height={240}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        labelLine={false}
+                        label={({ value }) => value}
+                      >
+                        {pieData.map((_, index) => (
+                          <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-8">
-
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <h2 className="text-xl font-bold mb-5">
-
-            Produtos Mais Vendidos
-
-          </h2>
-
-          <div className="space-y-3">
-
-            {
-
-              visibleProducts.map(
-                ([name, quantity]) => (
-
-                  <div
-
-                    key={name}
-
-                    className="flex justify-between bg-slate-800 p-3 rounded-xl"
-                  >
-
-                    <span>
-                      {name}
-                    </span>
-
-                    <strong>
-                      {quantity}
-                    </strong>
-
+                <div className="w-full sm:w-1/2">
+                  <div className="space-y-3">
+                    {sortedProducts.slice(0, 5).map(([name, quantity], index) => (
+                      <div key={index} className="flex justify-between border-b border-slate-800/60 pb-1.5">
+                        <span className="text-slate-300 text-xs truncate max-w-[200px]">{shortenText(name, 24)}</span>
+                        <span className="font-bold text-green-400 text-xs flex-shrink-0 pl-1">{quantity} un</span>
+                      </div>
+                    ))}
                   </div>
-
-                )
-              )
-            }
-
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2 italic">
+              Exibindo os 5 produtos com maior quantidade vendida no período.
+            </p>
           </div>
 
-        </div>
-
-        <div className="bg-slate-900 p-6 rounded-2xl shadow-lg">
-
-          <h2 className="text-xl font-bold mb-5">
-
-            Produtos Mais Lucrativos
-
-          </h2>
-
-          <div className="space-y-3">
-
-            {
-
-              visibleProfits.map(
-                ([name, profit]) => (
-
-                  <div
-
-                    key={name}
-
-                    className="flex justify-between bg-slate-800 p-3 rounded-xl"
-                  >
-
-                    <span>
-                      {name}
-                    </span>
-
-                    <strong className="text-green-400">
-
-                      R$ {
-                        formatCurrency(
-                          profit
-                        )
-                      }
-
-                    </strong>
-
-                  </div>
-
-                )
-              )
-            }
-
+          <div className="bg-slate-900 p-5 rounded-xl shadow-lg min-h-[270px] flex flex-col justify-between">
+            <h2 className="text-base font-bold mb-3">Performance Financeira</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '11px' }} />
+                <YAxis stroke="#94a3b8" style={{ fontSize: '11px' }} />
+                <Tooltip />
+                <Bar dataKey="valor">
+                  {chartData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-
         </div>
-
       </div>
-
     </div>
   )
 
   return (
+    <div className="bg-slate-950 min-h-screen text-white flex flex-col md:flex-row relative">
 
-    <div className="bg-slate-950 min-h-screen text-white flex">
+      {/* 📱 TOPO MOBILE: Aparece apenas em telas pequenas */}
+      <div className="md:hidden bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-30">
+        <h1 className="text-xl font-bold text-green-400">Rocket Imports</h1>
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-1 text-slate-200 hover:text-white transition-colors"
+        >
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
 
-      {/* SIDEBAR */}
+      {/* 🖤 SOMBRA DE FUNDO: Escurece o conteúdo ao abrir o menu no celular */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 p-6">
+      {/* Sidebar (Menu Lateral) Adaptada */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 p-6
+        transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0 flex flex-col justify-between h-full md:h-auto
+      `}>
+        <div>
+          {/* Topo do Menu com botão fechar no mobile */}
+          <div className="flex justify-between items-center mb-10">
+            <h1 className="text-2xl font-bold text-green-400">Rocket Imports Gestão</h1>
+            <button className="md:hidden text-slate-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
+              <X size={20} />
+            </button>
+          </div>
 
-        <h1 className="text-2xl font-bold text-green-400 mb-10">
+          <div className="mb-8 space-y-2">
+            {/* Ligar App */}
+            <button
+              onClick={() => { wakeUpBackend(); setIsSidebarOpen(false); }}
+              className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
+              disabled={loadingApp}
+            >
+              <div className="flex items-center gap-2.5">
+                <Power size={16} className={appReady ? "text-green-400" : "text-slate-400"} />
+                <span>Ligar App</span>
+              </div>
+              {loadingApp ? (
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${appReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
+              )}
+            </button>
 
-          Rocket Imports Gestão
+            {/* Mercado Livre */}
+            <button
+              onClick={() => { connectMercadoLivre(); setIsSidebarOpen(false); }}
+              className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
+              disabled={loadingML}
+            >
+              <div className="flex items-center gap-2.5">
+                <Store size={16} className={mercadoLivreReady ? "text-green-400" : "text-slate-400"} />
+                <span>Mercado Livre</span>
+              </div>
+              {loadingML ? (
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${mercadoLivreReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
+              )}
+            </button>
 
-        </h1>
+            {/* Shopee */}
+            <button
+              onClick={() => { connectShopee(); setIsSidebarOpen(false); }}
+              className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
+              disabled={loadingShopee}
+            >
+              <div className="flex items-center gap-2.5">
+                <ShoppingBag size={16} className={shopeeReady ? "text-green-400" : "text-slate-400"} />
+                <span>Shopee</span>
+              </div>
+              {loadingShopee ? (
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${shopeeReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
+              )}
+            </button>
+          </div>
 
-        <nav className="space-y-3">
-
-          <Link
-            to="/"
-            className={`block p-3 rounded-xl transition
-
-            ${location.pathname === "/"
-
-                ? "bg-slate-800"
-
-                : "hover:bg-slate-800"
+          <nav className="space-y-3">
+            <Link
+              to="/"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/" ? "bg-slate-800" : "hover:bg-slate-800"
               }`}
-          >
+            >
+              <LayoutDashboard size={18} />
+              Dashboard
+            </Link>
 
-            Dashboard
-
-          </Link>
-
-          <Link
-            to="/products"
-            className={`block p-3 rounded-xl transition
-
-            ${location.pathname === "/products"
-
-                ? "bg-slate-800"
-
-                : "hover:bg-slate-800"
+            <Link
+              to="/products"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/products" ? "bg-slate-800" : "hover:bg-slate-800"
               }`}
-          >
+            >
+              <Package size={18} />
+              Produtos
+            </Link>
 
-            Produtos
-
-          </Link>
-
-          <Link
-            to="/sales"
-            className={`block p-3 rounded-xl transition
-
-            ${location.pathname === "/sales"
-
-                ? "bg-slate-800"
-
-                : "hover:bg-slate-800"
+            <Link
+              to="/sales"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/sales" ? "bg-slate-800" : "hover:bg-slate-800"
               }`}
-          >
+            >
+              <ReceiptText size={18} />
+              Vendas
+            </Link>
 
-            Vendas
-
-          </Link>
-
-          <Link
-            to="/reports"
-            className={`block p-3 rounded-xl transition
-
-            ${location.pathname === "/reports"
-
-                ? "bg-slate-800"
-
-                : "hover:bg-slate-800"
+            <Link
+              to="/reports"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/reports" ? "bg-slate-800" : "hover:bg-slate-800"
               }`}
-          >
+            >
+              <BarChart3 size={18} />
+              Relatórios
+            </Link>
 
-            Relatórios
-
-          </Link>
-
-        </nav>
-
+            <Link
+              to="/calculator"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/calculator" ? "bg-slate-800" : "hover:bg-slate-800"
+              }`}
+            >
+              <CalculatorIcon size={18} />
+              <span>Calculadora</span>
+            </Link>
+          </nav>
+        </div>
       </aside>
 
-      {/* CONTEÚDO */}
-
-      <main className="flex-1 p-8 overflow-auto">
-
+      {/* Conteúdo Principal Ajustado */}
+      <main className="flex-1 p-4 md:p-8 overflow-auto">
         <Routes>
-
-          <Route
-            path="/"
-            element={<DashboardPage />}
-          />
-
-          <Route
-            path="/products"
-            element={<Products />}
-          />
-
-          <Route
-            path="/sales"
-            element={<Sales />}
-          />
-
-          <Route
-            path="/reports"
-            element={<Reports />}
-          />
-
+          <Route path="/" element={dashboardPage} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/sales" element={<Sales />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/calculator" element={<Calculator />} />
         </Routes>
-
       </main>
-
     </div>
   )
 }
