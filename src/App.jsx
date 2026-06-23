@@ -23,8 +23,10 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Calculator as CalculatorIcon, // <-- Ajustado aqui para não dar conflito
-  BarChart3
+  Calculator as CalculatorIcon,
+  BarChart3,
+  Menu, // <-- Adicionado para o botão do menu mobile
+  X     // <-- Adicionado para o botão de fechar o menu
 } from "lucide-react"
 
 import {
@@ -70,6 +72,9 @@ function App() {
   const [appReady, setAppReady] = useState(false)
   const [mercadoLivreReady, setMercadoLivreReady] = useState(false)
   const [shopeeReady, setShopeeReady] = useState(false)
+
+  // 📱 Estado para controlar se o menu lateral está aberto no celular
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const wakeUpBackend = async () => {
     try {
@@ -177,7 +182,6 @@ function App() {
         setProductIds(idMap)
         setProductSkus(skuMap)
 
-        // 1. IMPORTAÇÃO GLOBAL ABSOLUTA
         const allDates = salesData
           .filter(sale => sale.soldAt)
           .map(sale => new Date(sale.soldAt))
@@ -191,7 +195,6 @@ function App() {
           })
         }
 
-        // 2. FILTRAGEM DE PERÍODO LOCAL
         const now = new Date()
         const filteredSales = salesData.filter(sale => {
           if (!sale.soldAt) return false
@@ -280,7 +283,6 @@ function App() {
           return true
         })
 
-        // 3. ENGENHARIA DE CÁLCULO LOCAL ALINHADO COM SALES.JSX
         let localRevenue = 0
         let localCost = 0
         let localProfit = 0
@@ -301,7 +303,6 @@ function App() {
           localCost += cst
           localProfit += prf
 
-          // Agrupa por ID do pedido para contar vendas reais e não quantidade de itens
           uniqueOrders.add(sale.orderId || `fallback-${index}`)
 
           localTopSelling[name] = (localTopSelling[name] || 0) + qty
@@ -327,26 +328,12 @@ function App() {
           .sort((a, b) => a.getTime() - b.getTime())
 
         if (saleDates.length > 0) {
-
-          console.log(
-            "Primeira venda:",
-            saleDates[0]
-          )
-
-          console.log(
-            "Última venda:",
-            saleDates[saleDates.length - 1]
-          )
-
           setFilteredPeriodRange({
             first: saleDates[0],
             last: saleDates[saleDates.length - 1]
           })
-
         } else {
-
           setFilteredPeriodRange(null)
-
         }
       })
       .catch(() => {
@@ -522,12 +509,12 @@ function App() {
           <p className="text-sm text-slate-400 mt-1">Rocket Imports Gestão</p>
         </div>
 
-        <div className="flex flex-col items-start sm:items-end gap-2">
-          <div className="flex flex-wrap justify-start sm:justify-end gap-2.5">
+        <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap justify-start sm:justify-end gap-2.5 w-full sm:w-auto">
             <select
               value={marketplace}
               onChange={(e) => setMarketplace(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm"
+              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-sm flex-1 sm:flex-initial"
             >
               <option value="ALL">Todos</option>
               <option value="MERCADO_LIVRE">Mercado Livre</option>
@@ -536,7 +523,7 @@ function App() {
 
             <button
               onClick={() => setPeriod("DAY")}
-              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition ${
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
                 period === "DAY" ? "bg-cyan-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
             >
@@ -545,7 +532,7 @@ function App() {
 
             <button
               onClick={() => setPeriod("WEEK")}
-              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition ${
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
                 period === "WEEK" ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
             >
@@ -554,7 +541,7 @@ function App() {
 
             <button
               onClick={() => setPeriod("PREVIOUS_WEEK")}
-              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition ${
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
                 period === "PREVIOUS_WEEK" ? "bg-indigo-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
             >
@@ -563,7 +550,7 @@ function App() {
 
             <button
               onClick={() => setPeriod("MONTH")}
-              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition ${
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
                 period === "MONTH" ? "bg-green-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
             >
@@ -572,7 +559,7 @@ function App() {
 
             <button
               onClick={() => setPeriod("PREVIOUS_MONTH")}
-              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition ${
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
                 period === "PREVIOUS_MONTH" ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
             >
@@ -581,7 +568,7 @@ function App() {
 
             <button
               onClick={() => setPeriod("YEAR")}
-              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition ${
+              className={`px-3 py-1.5 text-sm rounded-xl font-semibold transition flex-1 sm:flex-initial ${
                 period === "YEAR" ? "bg-purple-600 text-white" : "bg-slate-700 text-slate-200"
               }`}
             >
@@ -590,26 +577,26 @@ function App() {
 
             <button
               onClick={importSales}
-              className="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-sm rounded-xl font-semibold transition flex items-center gap-1.5"
+              className="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-sm rounded-xl font-semibold transition flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
             >
               <Download size={16} />
               {loadingImport ? "Importando..." : "Importar"}
             </button>
           </div>
 
-          <div className="text-xs text-slate-400 text-left sm:text-right flex items-center gap-1.5 mt-0.5">
-            <Calendar size={13} className="text-slate-500" />
-            <span>
-              Período: {getDynamicPeriodText()}
-            </span>
-            <span className="text-slate-600 mx-1">|</span>
+          <div className="text-xs text-slate-400 text-left sm:text-right flex flex-wrap items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-1">
+              <Calendar size={13} className="text-slate-500" />
+              <span>Período: {getDynamicPeriodText()}</span>
+            </div>
+            <span className="hidden sm:inline text-slate-600 mx-1">|</span>
             <span>{importRangeText}</span>
           </div>
         </div>
       </div>
 
       {/* KPIS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-900 p-4 rounded-xl shadow-lg flex justify-between items-start">
           <div>
             <p className="text-xs text-slate-400">Faturamento</p>
@@ -677,7 +664,7 @@ function App() {
           <div>
             <h2 className="text-lg font-bold mb-4">Produtos Vendidos no Período</h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[500px]">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400 text-[11px] uppercase tracking-wider">
                     <th className="pb-2.5 font-semibold">Produto</th>
@@ -780,16 +767,16 @@ function App() {
         </div>
 
         {/* DIREITA: Coluna de Gráficos */}
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           <div className="bg-slate-900 p-5 rounded-xl shadow-lg flex flex-col justify-between min-h-[350px]">
             <div>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                 <h2 className="text-base font-bold">Distribuição Produtos</h2>
-                <h3 className="font-bold text-sm text-slate-300 pr-2">Produtos Mais Vendidos</h3>
+                <h3 className="font-bold text-sm text-slate-300 sm:pr-2">Produtos Mais Vendidos</h3>
               </div>
 
-              <div className="flex gap-4 items-center">
-                <div className="w-1/2">
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="w-full sm:w-1/2">
                   <ResponsiveContainer width="100%" height={240}>
                     <PieChart>
                       <Pie
@@ -798,7 +785,7 @@ function App() {
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        outerRadius={90}
+                        outerRadius={80}
                         labelLine={false}
                         label={({ value }) => value}
                       >
@@ -811,11 +798,11 @@ function App() {
                   </ResponsiveContainer>
                 </div>
 
-                <div className="w-1/2">
+                <div className="w-full sm:w-1/2">
                   <div className="space-y-3">
                     {sortedProducts.slice(0, 5).map(([name, quantity], index) => (
                       <div key={index} className="flex justify-between border-b border-slate-800/60 pb-1.5">
-                        <span className="text-slate-300 text-xs">{shortenText(name, 30)}</span>
+                        <span className="text-slate-300 text-xs truncate max-w-[200px]">{shortenText(name, 24)}</span>
                         <span className="font-bold text-green-400 text-xs flex-shrink-0 pl-1">{quantity} un</span>
                       </div>
                     ))}
@@ -850,118 +837,157 @@ function App() {
   )
 
   return (
-    <div className="bg-slate-950 min-h-screen text-white flex">
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 p-6">
-        <h1 className="text-2xl font-bold text-green-400 mb-10">Rocket Imports Gestão</h1>
+    <div className="bg-slate-950 min-h-screen text-white flex flex-col md:flex-row relative">
 
-        <div className="mb-8 space-y-2">
-          {/* Ligar App */}
-          <button
-            onClick={wakeUpBackend}
-            className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
-            disabled={loadingApp}
-          >
-            <div className="flex items-center gap-2.5">
-              <Power size={16} className={appReady ? "text-green-400" : "text-slate-400"} />
-              <span>Ligar App</span>
-            </div>
-            {loadingApp ? (
-              <Loader2 size={16} className="animate-spin text-slate-400" />
-            ) : (
-              <span className={`w-2 h-2 rounded-full ${appReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
-            )}
-          </button>
+      {/* 📱 TOPO MOBILE: Aparece apenas em telas pequenas */}
+      <div className="md:hidden bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-30">
+        <h1 className="text-xl font-bold text-green-400">Rocket Imports</h1>
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-1 text-slate-200 hover:text-white transition-colors"
+        >
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
 
-          {/* Mercado Livre */}
-          <button
-            onClick={connectMercadoLivre}
-            className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
-            disabled={loadingML}
-          >
-            <div className="flex items-center gap-2.5">
-              <Store size={16} className={mercadoLivreReady ? "text-green-400" : "text-slate-400"} />
-              <span>Mercado Livre</span>
-            </div>
-            {loadingML ? (
-              <Loader2 size={16} className="animate-spin text-slate-400" />
-            ) : (
-              <span className={`w-2 h-2 rounded-full ${mercadoLivreReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
-            )}
-          </button>
+      {/* 🖤 SOMBRA DE FUNDO: Escurece o conteúdo ao abrir o menu no celular */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-          {/* Shopee */}
-          <button
-            onClick={connectShopee}
-            className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
-            disabled={loadingShopee}
-          >
-            <div className="flex items-center gap-2.5">
-              <ShoppingBag size={16} className={shopeeReady ? "text-green-400" : "text-slate-400"} />
-              <span>Shopee</span>
-            </div>
-            {loadingShopee ? (
-              <Loader2 size={16} className="animate-spin text-slate-400" />
-            ) : (
-              <span className={`w-2 h-2 rounded-full ${shopeeReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
-            )}
-          </button>
+      {/* Sidebar (Menu Lateral) Adaptada */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 p-6
+        transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0 flex flex-col justify-between h-full md:h-auto
+      `}>
+        <div>
+          {/* Topo do Menu com botão fechar no mobile */}
+          <div className="flex justify-between items-center mb-10">
+            <h1 className="text-2xl font-bold text-green-400">Rocket Imports Gestão</h1>
+            <button className="md:hidden text-slate-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="mb-8 space-y-2">
+            {/* Ligar App */}
+            <button
+              onClick={() => { wakeUpBackend(); setIsSidebarOpen(false); }}
+              className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
+              disabled={loadingApp}
+            >
+              <div className="flex items-center gap-2.5">
+                <Power size={16} className={appReady ? "text-green-400" : "text-slate-400"} />
+                <span>Ligar App</span>
+              </div>
+              {loadingApp ? (
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${appReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
+              )}
+            </button>
+
+            {/* Mercado Livre */}
+            <button
+              onClick={() => { connectMercadoLivre(); setIsSidebarOpen(false); }}
+              className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
+              disabled={loadingML}
+            >
+              <div className="flex items-center gap-2.5">
+                <Store size={16} className={mercadoLivreReady ? "text-green-400" : "text-slate-400"} />
+                <span>Mercado Livre</span>
+              </div>
+              {loadingML ? (
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${mercadoLivreReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
+              )}
+            </button>
+
+            {/* Shopee */}
+            <button
+              onClick={() => { connectShopee(); setIsSidebarOpen(false); }}
+              className="w-full flex items-center justify-between p-3 rounded-xl font-medium text-sm transition bg-slate-950 border border-slate-800 hover:bg-slate-800/60 text-slate-200"
+              disabled={loadingShopee}
+            >
+              <div className="flex items-center gap-2.5">
+                <ShoppingBag size={16} className={shopeeReady ? "text-green-400" : "text-slate-400"} />
+                <span>Shopee</span>
+              </div>
+              {loadingShopee ? (
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${shopeeReady ? "bg-green-500 shadow-sm shadow-green-500" : "bg-red-500"}`} />
+              )}
+            </button>
+          </div>
+
+          <nav className="space-y-3">
+            <Link
+              to="/"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/" ? "bg-slate-800" : "hover:bg-slate-800"
+              }`}
+            >
+              <LayoutDashboard size={18} />
+              Dashboard
+            </Link>
+
+            <Link
+              to="/products"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/products" ? "bg-slate-800" : "hover:bg-slate-800"
+              }`}
+            >
+              <Package size={18} />
+              Produtos
+            </Link>
+
+            <Link
+              to="/sales"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/sales" ? "bg-slate-800" : "hover:bg-slate-800"
+              }`}
+            >
+              <ReceiptText size={18} />
+              Vendas
+            </Link>
+
+            <Link
+              to="/reports"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/reports" ? "bg-slate-800" : "hover:bg-slate-800"
+              }`}
+            >
+              <BarChart3 size={18} />
+              Relatórios
+            </Link>
+
+            <Link
+              to="/calculator"
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-xl transition ${
+                location.pathname === "/calculator" ? "bg-slate-800" : "hover:bg-slate-800"
+              }`}
+            >
+              <CalculatorIcon size={18} />
+              <span>Calculadora</span>
+            </Link>
+          </nav>
         </div>
-
-        <nav className="space-y-3">
-          <Link
-            to="/"
-            className={`flex items-center gap-2 p-3 rounded-xl transition ${
-              location.pathname === "/" ? "bg-slate-800" : "hover:bg-slate-800"
-            }`}
-          >
-            <LayoutDashboard size={18} />
-            Dashboard
-          </Link>
-
-          <Link
-            to="/products"
-            className={`flex items-center gap-2 p-3 rounded-xl transition ${
-              location.pathname === "/products" ? "bg-slate-800" : "hover:bg-slate-800"
-            }`}
-          >
-            <Package size={18} />
-            Produtos
-          </Link>
-
-          <Link
-            to="/sales"
-            className={`flex items-center gap-2 p-3 rounded-xl transition ${
-              location.pathname === "/sales" ? "bg-slate-800" : "hover:bg-slate-800"
-            }`}
-          >
-            <ReceiptText size={18} />
-            Vendas
-          </Link>
-
-          <Link
-            to="/reports"
-            className={`flex items-center gap-2 p-3 rounded-xl transition ${
-              location.pathname === "/reports" ? "bg-slate-800" : "hover:bg-slate-800"
-            }`}
-          >
-            <BarChart3 size={18} />
-            Relatórios
-          </Link>
-          <Link
-            to="/calculator"
-            className={`flex items-center gap-2 p-3 rounded-xl transition ${
-              location.pathname === "/calculator"
-                ? "bg-slate-800"
-                : "hover:bg-slate-800"
-            }`}
-          >
-            <CalculatorIcon size={18} /> {/* <-- Atualizado aqui */}
-            <span>Calculadora</span>
-          </Link>
-        </nav>
       </aside>
 
-      <main className="flex-1 p-8 overflow-auto">
+      {/* Conteúdo Principal Ajustado */}
+      <main className="flex-1 p-4 md:p-8 overflow-auto">
         <Routes>
           <Route path="/" element={dashboardPage} />
           <Route path="/products" element={<Products />} />

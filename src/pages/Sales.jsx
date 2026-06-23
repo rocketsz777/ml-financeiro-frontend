@@ -219,147 +219,215 @@ function Sales() {
       0
     )
 
+  // LOGICA DO LOG DE DATAS DINÂMICO EQUIVALENTE AO DE PRODUTOS
+  const getPeriodLabel = () => {
+    const formatDate = (d) => d.toLocaleDateString("pt-BR");
+    const formatDayMonth = (d) => {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      return `${day}/${month}`;
+    };
+
+    let start = new Date(now);
+    let end = new Date(now);
+
+    if (period === "DAY") {
+      start = new Date(now);
+      end = new Date(now);
+    } else if (period === "WEEK") {
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay() === 0 ? 7 : startOfWeek.getDay();
+      startOfWeek.setDate(startOfWeek.getDate() - day + 1);
+      startOfWeek.setHours(0, 0, 0, 0);
+      start = startOfWeek;
+      end = now;
+    } else if (period === "PREVIOUS_WEEK") {
+      const startCurrent = new Date(now);
+      const day = startCurrent.getDay() === 0 ? 7 : startCurrent.getDay();
+      startCurrent.setDate(startCurrent.getDate() - day + 1);
+      startCurrent.setHours(0, 0, 0, 0);
+
+      const startPrevious = new Date(startCurrent);
+      startPrevious.setDate(startPrevious.getDate() - 7);
+
+      const endPrevious = new Date(startCurrent);
+      endPrevious.setDate(endPrevious.getDate() - 1);
+
+      start = startPrevious;
+      end = endPrevious;
+    } else if (period === "MONTH") {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = now;
+    } else if (period === "PREVIOUS_MONTH") {
+      const currentMonth = now.getMonth();
+      let expectedMonth = currentMonth - 1;
+      let expectedYear = now.getFullYear();
+      if (expectedMonth < 0) {
+        expectedMonth = 11;
+        expectedYear -= 1;
+      }
+      start = new Date(expectedYear, expectedMonth, 1);
+      end = new Date(expectedYear, expectedMonth + 1, 0);
+    }
+
+    let importText = "";
+    if (sales && sales.length > 0) {
+      const dates = sales.map(s => new Date(s.soldAt).getTime()).filter(t => !isNaN(t));
+      if (dates.length > 0) {
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+        importText = ` | Importação do dia ${formatDayMonth(minDate)} ao ${formatDayMonth(maxDate)}`;
+      }
+    }
+
+    return `Período: ${formatDate(start)} até ${formatDate(end)}${importText}`;
+  };
+
 
   return (
       <div>
-        {/* TOPO - TÍTULO À ESQUERDA E CARDS DE RESUMO À DIREITA (NA MESMA LINHA) */}
-        <div className="flex flex-wrap justify-between items-center gap-6 mb-8">
-          {/* Lado Esquerdo: Título e Subtítulo */}
+        {/* TOPO ALINHADO IGUAL A PRODUTOS (MANTENDO PADRÃO DAS IMAGENS image_3551e6.jpg E image_35521e.jpg) */}
+        <div className="flex justify-between items-start mb-8">
+
+          {/* ESQUERDA - TÍTULO E PERÍODO LOG */}
           <div>
             <h1 className="text-4xl font-bold">Vendas</h1>
             <p className="text-slate-400 mt-2">Histórico operacional de vendas</p>
+            <p className="text-xs font-semibold text-cyan-400 mt-3 bg-slate-900/60 inline-block px-3 py-1.5 rounded-lg border border-slate-800 tracking-wide">
+              {getPeriodLabel()}
+            </p>
           </div>
 
-          {/* Lado Direito: Cards de Resumo em linha */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[140px]">
+          {/* CENTRO - CARDS DE RESUMO */}
+          <div className="flex gap-4">
+            <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[150px]">
               <p className="text-xs text-slate-400">Vendas Encontradas</p>
               <h2 className="text-2xl font-bold text-white mt-1">
                 {totalSales}
               </h2>
             </div>
 
-            <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[160px]">
-              <p className="text-xs text-slate-400">Custos</p>
+            <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[180px]">
+              <p className="text-xs text-slate-400">Custo Total</p>
               <h2 className="text-2xl font-bold text-red-400 mt-1">
                 R$ {formatCurrency(totalCostSummary)}
               </h2>
             </div>
 
-            <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[160px]">
-              <p className="text-xs text-slate-400">Lucro</p>
+            <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[180px]">
+              <p className="text-xs text-slate-400">Lucro Total</p>
               <h2 className="text-2xl font-bold text-green-400 mt-1">
                 R$ {formatCurrency(totalProfitSummary)}
               </h2>
             </div>
           </div>
-        </div>
 
-        {/* SEGUNDA LINHA: BUSCA E FILTROS DE MARKETPLACE LADO A LADO */}
-        <div className="flex flex-wrap items-center gap-4 mb-4">
+          {/* DIREITA - INPUT DE BUSCA, FILTRO DE MARKETPLACE E FILTRO DE PERÍODOS */}
+          <div className="flex flex-col items-end gap-3">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="Buscar produto..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 w-72"
+              />
 
-          {/* BUSCA NA FRENTE */}
-          <input
-            type="text"
-            placeholder="Buscar produto..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 w-72"
-          />
+              {/* FILTROS DE MARKETPLACE */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setMarketplaceFilter("TODOS")}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    marketplaceFilter === "TODOS"
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  Todos
+                </button>
 
-          {/* BOTÕES MARKETPLACE */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMarketplaceFilter("TODOS")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-                marketplaceFilter === "TODOS"
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-800 text-slate-300"
-              }`}
-            >
-              Todos
-            </button>
+                <button
+                  onClick={() => setMarketplaceFilter("MERCADO_LIVRE")}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    marketplaceFilter === "MERCADO_LIVRE"
+                      ? "bg-yellow-500 text-black"
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  Mercado Livre
+                </button>
 
-            <button
-              onClick={() => setMarketplaceFilter("MERCADO_LIVRE")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-                marketplaceFilter === "MERCADO_LIVRE"
-                  ? "bg-yellow-500 text-black"
-                  : "bg-slate-800 text-slate-300"
-              }`}
-            >
-              Mercado Livre
-            </button>
+                <button
+                  onClick={() => setMarketplaceFilter("SHOPEE")}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    marketplaceFilter === "SHOPEE"
+                      ? "bg-orange-500 text-white"
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  Shopee
+                </button>
+              </div>
+            </div>
 
-            <button
-              onClick={() => setMarketplaceFilter("SHOPEE")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-                marketplaceFilter === "SHOPEE"
-                  ? "bg-orange-500 text-white"
-                  : "bg-slate-800 text-slate-300"
-              }`}
-            >
-              Shopee
-            </button>
+            {/* FILTROS DE PERÍODO */}
+            <div className="flex gap-2 flex-wrap justify-end">
+              <button
+                onClick={() => setPeriod("DAY")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  period === "DAY"
+                    ? "bg-cyan-600 text-white"
+                    : "bg-slate-800 text-slate-300"
+                }`}
+              >
+                Diário
+              </button>
+
+              <button
+                onClick={() => setPeriod("WEEK")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  period === "WEEK"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-800 text-slate-300"
+                }`}
+              >
+                Semanal
+              </button>
+
+              <button
+                onClick={() => setPeriod("PREVIOUS_WEEK")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  period === "PREVIOUS_WEEK"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-800 text-slate-300"
+                }`}
+              >
+                Semana Passada
+              </button>
+
+              <button
+                onClick={() => setPeriod("MONTH")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  period === "MONTH"
+                    ? "bg-green-600 text-white"
+                    : "bg-slate-800 text-slate-300"
+                }`}
+              >
+                Mensal
+              </button>
+
+              <button
+                onClick={() => setPeriod("PREVIOUS_MONTH")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  period === "PREVIOUS_MONTH"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-800 text-slate-300"
+                }`}
+              >
+                Mês Passado
+              </button>
+            </div>
           </div>
-        </div>
-
-        {/* TERCEIRA LINHA: FILTROS DE PERÍODO */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          <button
-            onClick={() => setPeriod("DAY")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-              period === "DAY"
-                ? "bg-cyan-600 text-white"
-                : "bg-slate-800 text-slate-300"
-            }`}
-          >
-            Diário
-          </button>
-
-          <button
-            onClick={() => setPeriod("WEEK")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-              period === "WEEK"
-                ? "bg-blue-600 text-white"
-                : "bg-slate-800 text-slate-300"
-            }`}
-          >
-            Semanal
-          </button>
-
-          <button
-            onClick={() => setPeriod("PREVIOUS_WEEK")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-              period === "PREVIOUS_WEEK"
-                ? "bg-indigo-600 text-white"
-                : "bg-slate-800 text-slate-300"
-            }`}
-          >
-            Semana Passada
-          </button>
-
-          <button
-            onClick={() => setPeriod("MONTH")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-              period === "MONTH"
-                ? "bg-green-600 text-white"
-                : "bg-slate-800 text-slate-300"
-            }`}
-          >
-            Mensal
-          </button>
-
-          <button
-            onClick={() => setPeriod("PREVIOUS_MONTH")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-              period === "PREVIOUS_MONTH"
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-800 text-slate-300"
-            }`}
-          >
-            Mês Passado
-          </button>
         </div>
 
       <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-lg overflow-x-auto">
