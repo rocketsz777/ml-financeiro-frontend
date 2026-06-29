@@ -58,7 +58,7 @@ function Products() {
 
   const now = new Date();
 
-  // FILTRO DE VENDAS POR PERÍODO
+  // FILTRO DE VENDAS POR PERÍRODO
   const filteredSales = sales.filter(sale => {
     const targetDate = new Date(sale.soldAt)
     let matchesPeriod = true
@@ -359,62 +359,63 @@ function Products() {
   }
 
   return (
-    <div>
-      {/* SEÇÃO DO TOPO */}
-      <div className="flex justify-between items-start mb-8">
-        {/* ESQUERDA - COM O NOVO LOG DE DATAS DINÂMICO */}
-        <div>
-          <h1 className="text-4xl font-bold">Produtos</h1>
-          <p className="text-slate-400 mt-2">Gestão e performance dos produtos</p>
-          <p className="text-xs font-semibold text-cyan-400 mt-3 bg-slate-900/60 inline-block px-3 py-1.5 rounded-lg border border-slate-800 tracking-wide">
+    <div className="w-full px-2 sm:px-4 py-4 max-w-full overflow-hidden">
+      {/* SEÇÃO DO TOPO - Totalmente responsiva para Mobile */}
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6 mb-8">
+
+        {/* ESQUERDA - Título e Log de datas */}
+        <div className="w-full lg:w-auto">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Produtos</h1>
+          <p className="text-slate-400 mt-1 text-sm">Gestão e performance dos produtos</p>
+          <p className="text-[11px] sm:text-xs font-semibold text-cyan-400 mt-3 bg-slate-900/60 inline-block px-3 py-1.5 rounded-lg border border-slate-800 tracking-wide break-words max-w-full">
             {getPeriodLabel()}
           </p>
         </div>
 
-        {/* CENTRO */}
-        <div className="flex gap-4">
-          <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[150px]">
+        {/* CENTRO - Cards de Indicadores convertidos para Grid fluido */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+          <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800/50">
             <p className="text-xs text-slate-400">Unidades Vendidas</p>
-            <h2 className="text-2xl font-bold text-white mt-1">{totalUnitsSold}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">{totalUnitsSold}</h2>
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[180px]">
+          <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800/50">
             <p className="text-xs text-slate-400">Custo Total</p>
-            <h2 className="text-2xl font-bold text-red-400 mt-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-red-400 mt-1">
               R$ {formatCurrency(totalCostSummary)}
             </h2>
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-xl shadow-lg min-w-[180px]">
+          <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800/50">
             <p className="text-xs text-slate-400">Lucro Total</p>
-            <h2 className="text-2xl font-bold text-green-400 mt-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-green-400 mt-1">
               R$ {formatCurrency(totalProfitSummary)}
             </h2>
           </div>
         </div>
 
-        {/* DIREITA - BOTÃO MÊS PASSADO REMOVIDO */}
-        <div className="flex flex-col items-end gap-3">
-          <div className="flex gap-3">
+        {/* DIREITA - Filtros e Busca adaptados para Android */}
+        <div className="flex flex-col items-stretch sm:items-stretch lg:items-end gap-3 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2.5 w-full">
             <input
               type="text"
               placeholder="Buscar produto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 w-72"
+              className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm w-full lg:w-72 focus:outline-none focus:border-cyan-500"
             />
             <button
               onClick={() => setShowNewProductModal(true)}
-              className="bg-green-600 hover:bg-green-500 px-5 py-3 rounded-xl font-semibold"
+              className="bg-green-600 hover:bg-green-500 px-5 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap text-center"
             >
               + Novo Produto
             </button>
           </div>
 
-          <div className="flex gap-2 flex-wrap justify-end">
+          <div className="flex gap-1.5 flex-wrap w-full justify-start lg:justify-end">
             <button
               onClick={() => setPeriod("DAY")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex-1 sm:flex-none text-center ${
                 period === "DAY" ? "bg-cyan-600 text-white" : "bg-slate-800 text-slate-300"
               }`}
             >
@@ -422,7 +423,7 @@ function Products() {
             </button>
             <button
               onClick={() => setPeriod("WEEK")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex-1 sm:flex-none text-center ${
                 period === "WEEK" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300"
               }`}
             >
@@ -430,7 +431,7 @@ function Products() {
             </button>
             <button
               onClick={() => setPeriod("PREVIOUS_WEEK")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex-1 sm:flex-none text-center ${
                 period === "PREVIOUS_WEEK" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"
               }`}
             >
@@ -438,7 +439,7 @@ function Products() {
             </button>
             <button
               onClick={() => setPeriod("MONTH")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex-1 sm:flex-none text-center ${
                 period === "MONTH" ? "bg-green-600 text-white" : "bg-slate-800 text-slate-300"
               }`}
             >
@@ -448,23 +449,23 @@ function Products() {
         </div>
       </div>
 
-      {/* TABELA DE PRODUTOS */}
-      <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-lg overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-slate-800">
+      {/* TABELA DE PRODUTOS - Com rolagem horizontal nativa para visualização em tabelas grandes */}
+      <div className="bg-slate-900 rounded-2xl shadow-lg border border-slate-800 overflow-x-auto w-full custom-scrollbar">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-800 text-xs sm:text-sm text-slate-300">
             <tr>
-              <th className="text-left py-2.5 px-4">Produto</th>
-              <th className="text-left py-2.5 px-4">SKU</th>
-              <th className="text-left py-2.5 px-4">Anúncios</th>
-              <th className="text-left py-2.5 px-4">Estoque</th>
-              <th className="text-center py-2.5 px-4">Vendidas</th>
-              <th className="text-center py-2.5 px-4">Custo Antigo</th>
-              <th className="text-center py-2.5 px-4">Custo Atual</th>
-              <th className="text-left py-2.5 px-4">Custo Total</th>
-              <th className="text-left py-2.5 px-4">Lucro</th>
+              <th className="py-3 px-4 font-semibold">Produto</th>
+              <th className="py-3 px-4 font-semibold">SKU</th>
+              <th className="py-3 px-4 font-semibold">Anúncios</th>
+              <th className="py-3 px-4 font-semibold text-center">Estoque</th>
+              <th className="py-3 px-4 font-semibold text-center">Vendidas</th>
+              <th className="py-3 px-4 font-semibold text-center">Custo Antigo</th>
+              <th className="py-3 px-4 font-semibold text-center">Custo Atual</th>
+              <th className="py-3 px-4 font-semibold">Custo Total</th>
+              <th className="py-3 px-4 font-semibold">Lucro</th>
             </tr>
           </thead>
-          <tbody className="text-sm">
+          <tbody className="text-xs sm:text-sm divide-y divide-slate-800/60">
             {currentItems.map((product, index) => {
               const costEditKey = `${product.sku}-costPrice`;
               const nameEditKey = `${product.sku}-name`;
@@ -472,39 +473,39 @@ function Products() {
               return (
                 <tr
                   key={product.sku || `${product.name}-${index}`}
-                  className="border-t border-slate-800 hover:bg-slate-800 transition"
+                  className="hover:bg-slate-800/40 transition-colors"
                 >
                   {/* Nome do Produto */}
-                  <td className="py-2 px-4 min-w-[420px]">
+                  <td className="py-3 px-4 min-w-[340px] sm:min-w-[420px]">
                     {isEditing(product, "name") ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <input
                           value={editing.value}
                           onChange={(event) => updateEditingValue(event.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 w-full"
+                          className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 w-full text-sm"
                           autoFocus
                         />
                         <button
                           title="Salvar nome"
                           onClick={() => saveEditing(product)}
                           disabled={saving === nameEditKey}
-                          className="p-2 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-60"
+                          className="p-2 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-60 flex-shrink-0"
                         >
-                          <Save size={16} />
+                          <Save size={14} />
                         </button>
                         <button
                           title="Cancelar"
                           onClick={cancelEditing}
-                          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+                          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 flex-shrink-0"
                         >
-                          <X size={16} />
+                          <X size={14} />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-2">
-                        <div>
-                          <div className="font-semibold">{product.name}</div>
-                          <div className="text-slate-400 text-xs mt-1">
+                      <div className="flex items-start gap-1.5 group">
+                        <div className="max-w-[280px] sm:max-w-md">
+                          <div className="font-semibold text-slate-100 line-clamp-2">{product.name}</div>
+                          <div className="text-slate-500 text-[11px] mt-0.5 font-mono">
                             SKU: {product.sku}
                           </div>
                         </div>
@@ -512,65 +513,68 @@ function Products() {
                           title="Editar nome"
                           onClick={() => startEditing(product, "name")}
                           disabled={!product.sku}
-                          className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-40"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40"
                         >
-                          <Pencil size={15} />
+                          <Pencil size={13} />
                         </button>
                       </div>
                     )}
                   </td>
 
                   {/* SKU */}
-                  <td className="py-2 px-4 text-left">
+                  <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
                     {isEditing(product, "sku") ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <input
                           value={editing.value}
                           onChange={(event) => updateEditingValue(event.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 w-full"
+                          className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 w-full text-xs font-mono"
                           autoFocus
                         />
                         <button
                           onClick={() => saveEditing(product)}
-                          className="p-2 rounded-lg bg-green-600 hover:bg-green-500"
+                          className="p-1.5 rounded-lg bg-green-600 hover:bg-green-500"
                         >
-                          <Save size={16} />
+                          <Save size={14} />
                         </button>
                         <button
                           onClick={cancelEditing}
-                          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+                          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600"
                         >
-                          <X size={16} />
+                          <X size={14} />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm">{product.sku}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-300">{product.sku}</span>
                         <button
                           onClick={() => startEditing(product, "sku")}
-                          className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700"
+                          className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
                         >
-                          <Pencil size={15} />
+                          <Pencil size={13} />
                         </button>
                       </div>
                     )}
                   </td>
 
                   {/* Anúncios */}
-                  <td className="py-2 px-4">
+                  <td className="py-3 px-4 text-xs whitespace-nowrap">
                     {product.adIds.length === 0 ? (
-                      "-"
+                      <span className="text-slate-600">-</span>
                     ) : (
-                      <details>
-                        <summary className="cursor-pointer text-cyan-400 hover:text-cyan-300">
+                      <details className="cursor-pointer">
+                        <summary className="text-cyan-400 hover:text-cyan-300 font-medium">
                           {product.adIds.length} anúncio(s)
                         </summary>
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-1.5 bg-slate-950/60 p-2 rounded-lg border border-slate-800/60 space-y-1 max-h-24 overflow-y-auto">
                           {product.adIds.map(id => (
                             <div
                               key={id}
-                              onClick={() => navigator.clipboard.writeText(id)}
-                              className="cursor-pointer text-xs font-mono hover:text-cyan-400"
+                              onClick={() => {
+                                navigator.clipboard.writeText(id);
+                                alert("ID copiado!");
+                              }}
+                              className="cursor-pointer text-[10px] font-mono text-slate-400 hover:text-cyan-400 p-0.5 rounded transition-colors"
                             >
                               {id}
                             </div>
@@ -581,103 +585,103 @@ function Products() {
                   </td>
 
                   {/* Estoque */}
-                  <td className="py-2 px-4 text-center">
+                  <td className="py-3 px-4 text-center whitespace-nowrap">
                     {isEditing(product, "stockQuantity") ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center gap-1">
                         <input
                           type="number"
                           value={editing.value}
                           onChange={(event) => updateEditingValue(event.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 w-24"
+                          className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 w-16 text-center text-sm"
                           autoFocus
                         />
                         <button
                           onClick={() => saveEditing(product)}
-                          className="p-2 rounded-lg bg-green-600 hover:bg-green-500"
+                          className="p-1.5 rounded-lg bg-green-600 hover:bg-green-500"
                         >
-                          <Save size={16} />
+                          <Save size={14} />
                         </button>
                         <button
                           onClick={cancelEditing}
-                          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+                          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600"
                         >
-                          <X size={16} />
+                          <X size={14} />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => startEditing(product, "stockQuantity")}
-                        className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-slate-700"
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-slate-800 text-slate-200"
                       >
-                        <span>{product.stockQuantity}</span>
-                        <Pencil size={15} />
+                        <span className="font-semibold">{product.stockQuantity}</span>
+                        <Pencil size={13} className="text-slate-500" />
                       </button>
                     )}
                   </td>
 
                   {/* Vendidas */}
-                  <td className="py-2 px-4 text-center text-green-400 font-semibold">
+                  <td className="py-3 px-4 text-center text-green-400 font-bold whitespace-nowrap">
                     {product.unitsSold}
                   </td>
 
                   {/* Custo Antigo */}
-                  <td className="py-2 px-4 text-center text-blue-400 font-semibold min-w-[160px]">
+                  <td className="py-3 px-4 text-center min-w-[140px] whitespace-nowrap">
                     {isEditing(product, "oldCostPrice") ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center gap-1">
                         <input
                           value={editing.value}
                           onChange={(event) => updateEditingValue(event.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 w-28 text-white"
+                          className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 w-20 text-sm text-center text-white"
                           autoFocus
                         />
                         <button
                           onClick={() => saveEditing(product)}
-                          className="p-2 rounded-lg bg-green-600 hover:bg-green-500"
+                          className="p-1.5 rounded-lg bg-green-600 hover:bg-green-500"
                         >
-                          <Save size={16} />
+                          <Save size={14} />
                         </button>
                         <button
                           onClick={cancelEditing}
-                          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+                          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600"
                         >
-                          <X size={16} />
+                          <X size={14} />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => startEditing(product, "oldCostPrice")}
-                        className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-blue-400 hover:bg-slate-700"
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-blue-400 font-semibold hover:bg-slate-800"
                       >
                         <span>R$ {formatCurrency(product.oldCostPrice || 0)}</span>
-                        <Pencil size={15} />
+                        <Pencil size={13} className="text-slate-600" />
                       </button>
                     )}
                   </td>
 
                   {/* Custo Atual */}
-                  <td className="py-2 px-4 text-center text-red-400 font-semibold min-w-[160px]">
+                  <td className="py-3 px-4 text-center min-w-[140px] whitespace-nowrap">
                     {isEditing(product, "costPrice") ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center gap-1">
                         <input
                           value={editing.value}
                           onChange={(event) => updateEditingValue(event.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 w-28 text-white"
+                          className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 w-20 text-sm text-center text-white"
                           autoFocus
                         />
                         <button
                           title="Salvar custo"
                           onClick={() => saveEditing(product)}
                           disabled={saving === costEditKey}
-                          className="p-2 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-60"
+                          className="p-1.5 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-60"
                         >
-                          <Save size={16} />
+                          <Save size={14} />
                         </button>
                         <button
                           title="Cancelar"
                           onClick={cancelEditing}
-                          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+                          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600"
                         >
-                          <X size={16} />
+                          <X size={14} />
                         </button>
                       </div>
                     ) : (
@@ -685,21 +689,21 @@ function Products() {
                         title="Editar custo"
                         onClick={() => startEditing(product, "costPrice")}
                         disabled={!product.sku}
-                        className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-red-400 hover:bg-slate-700 hover:text-red-300 disabled:opacity-40"
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-red-400 font-semibold hover:bg-slate-800 hover:text-red-300 disabled:opacity-40"
                       >
                         <span>R$ {formatCurrency(product.costPrice || 0)}</span>
-                        <Pencil size={15} />
+                        <Pencil size={13} className="text-slate-600" />
                       </button>
                     )}
                   </td>
 
                   {/* Custo Total */}
-                  <td className="py-2 px-4 text-left font-semibold text-slate-300">
+                  <td className="py-3 px-4 font-semibold text-slate-300 whitespace-nowrap">
                     R$ {formatCurrency(product.totalCostSold)}
                   </td>
 
                   {/* Lucro */}
-                  <td className="py-2 px-4 text-left font-semibold text-green-400">
+                  <td className="py-3 px-4 font-bold text-green-400 whitespace-nowrap">
                     R$ {formatCurrency(product.totalProfit)}
                   </td>
                 </tr>
@@ -708,17 +712,17 @@ function Products() {
           </tbody>
         </table>
 
-        {/* RODAPÉ DINÂMICO COM PAGINAÇÃO */}
+        {/* RODAPÉ DINÂMICO COM PAGINAÇÃO RESTRUTURADA PARA MOBILE */}
         {totalPages > 1 && (
-          <div className="flex justify-between items-center bg-slate-800/40 border-t border-slate-800 px-6 py-3">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-800/40 border-t border-slate-800 px-4 sm:px-6 py-4 sm:py-3">
             <span className="text-xs text-slate-400">
               Página <span className="text-white font-medium">{currentPage}</span> de <span className="text-white font-medium">{totalPages}</span>
             </span>
-            <div className="flex gap-1.5 items-center">
+            <div className="flex gap-1.5 items-center overflow-x-auto max-w-full py-1 snap-x scroll-smooth">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-40 transition"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-40 transition-colors flex-shrink-0"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -727,7 +731,7 @@ function Products() {
                 <button
                   key={i + 1}
                   onClick={() => setCurrentPage(i + 1)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex-shrink-0 snap-center ${
                     currentPage === i + 1
                       ? "bg-cyan-600 text-white"
                       : "bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
@@ -740,7 +744,7 @@ function Products() {
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-40 transition"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-40 transition-colors flex-shrink-0"
               >
                 <ChevronRight size={16} />
               </button>
@@ -749,35 +753,35 @@ function Products() {
         )}
       </div>
 
-      {/* MODAL DE NOVO PRODUTO */}
+      {/* MODAL DE NOVO PRODUTO - Adicionado margem e padding inteligente para celulares */}
       {showNewProductModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-slate-900 rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-6">Novo Produto</h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 w-full max-w-md border border-slate-800 shadow-2xl">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-5">Novo Produto</h2>
+            <div className="space-y-3.5">
               <input
-                placeholder="Nome"
+                placeholder="Nome do Produto"
                 value={newProduct.name}
                 onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
               />
               <input
                 placeholder="SKU"
                 value={newProduct.sku}
                 onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono"
               />
             </div>
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-2.5 mt-6">
               <button
                 onClick={() => setShowNewProductModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-700"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={createProduct}
-                className="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500"
+                className="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors"
               >
                 Salvar
               </button>
