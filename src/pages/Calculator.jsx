@@ -19,6 +19,17 @@ export default function Calculator() {
   const [shopeeHasFreeShippingProgram, setShopeeHasFreeShippingProgram] = useState(true); // Participa do programa de frete grátis (+6%)?
   const [shopeeExtraCost, setShopeeExtraCost] = useState("0"); // Custos extras (embalagem, etc)
 
+  // FUNÇÃO PARA LIMPAR TODOS OS DADOS MANUALMENTE
+  const handleClear = () => {
+    setSellingPrice("");
+    setProductCost("");
+    setTaxPercent("0");
+    setDesiredProfit("");
+    setMlIsFreeShipping(false);
+    setMlShippingCost("25");
+    setShopeeExtraCost("0");
+  };
+
   // CÁLCULO UNIFICADO REATIVO
   const results = useMemo(() => {
     const price = Number(sellingPrice) || 0;
@@ -143,68 +154,68 @@ export default function Calculator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* SELETOR DE PLATAFORMA */}
-      <div className="flex gap-4 mb-6">
+    <div className="max-w-4xl mx-auto p-4 md:p-6">
+      {/* SELETOR DE PLATAFORMA + BOTÃO LIMPAR - Layout adaptável para Mobile */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="flex flex-1 gap-2">
+          <button
+            onClick={() => setPlatform("MERCADO_LIVRE")}
+            className={`flex-1 py-3 rounded-xl font-bold border text-center text-sm sm:text-base transition ${
+              platform === "MERCADO_LIVRE"
+                ? "bg-yellow-500 text-black border-yellow-500"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
+            }`}
+          >
+            Mercado Livre
+          </button>
+          <button
+            onClick={() => setPlatform("SHOPEE")}
+            className={`flex-1 py-3 rounded-xl font-bold border text-center text-sm sm:text-base transition ${
+              platform === "SHOPEE"
+                ? "bg-orange-600 text-white border-orange-600"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
+            }`}
+          >
+            Shopee
+          </button>
+        </div>
+
+        {/* NOVO: Botão Limpar posicionado convenientemente para uso mobile */}
         <button
-          onClick={() => {
-            setPlatform("MERCADO_LIVRE");
-            setSellingPrice("");
-            setDesiredProfit("");
-          }}
-          className={`flex-1 py-3 rounded-xl font-bold border text-center transition ${
-            platform === "MERCADO_LIVRE"
-              ? "bg-yellow-500 text-black border-yellow-500"
-              : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
-          }`}
+          onClick={handleClear}
+          className="py-3 px-5 rounded-xl font-bold border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm sm:text-base transition text-center"
         >
-          Mercado Livre
-        </button>
-        <button
-          onClick={() => {
-            setPlatform("SHOPEE");
-            setSellingPrice("");
-            setDesiredProfit("");
-          }}
-          className={`flex-1 py-3 rounded-xl font-bold border text-center transition ${
-            platform === "SHOPEE"
-              ? "bg-orange-600 text-white border-orange-600"
-              : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
-          }`}
-        >
-          Shopee
+          Limpar Dados
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* GRID PRINCIPAL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
+
         {/* FORMULÁRIO DE ENTRADA */}
-        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex flex-col gap-5">
+        <div className="bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-800 flex flex-col gap-4 sm:gap-5">
 
           {/* Custo do Produto */}
           <div>
-            <label className="text-sm font-semibold text-slate-300 block mb-2">Custo do Produto (R$)</label>
+            <label className="text-xs sm:text-sm font-semibold text-slate-300 block mb-1.5">Custo do Produto (R$)</label>
             <input
               type="number"
               placeholder="Ex: 30.00"
               value={productCost}
-              onChange={(e) => {
-                setProductCost(e.target.value);
-                setSellingPrice("");
-                setDesiredProfit("");
-              }}
-              className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 w-full text-white focus:outline-none focus:border-blue-500"
+              onChange={(e) => setProductCost(e.target.value)}
+              className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 sm:py-3 w-full text-white text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
 
           {/* Preço de Venda Pretendido */}
           <div>
-            <label className="text-sm font-semibold text-slate-300 block mb-2">Preço de Venda Pretendido (R$)</label>
+            <label className="text-xs sm:text-sm font-semibold text-slate-300 block mb-1.5">Preço de Venda Pretendido (R$)</label>
             <input
               type="number"
               placeholder="Ex: 120.00"
               value={sellingPrice}
               onChange={(e) => setSellingPrice(e.target.value)}
-              className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 w-full text-white focus:outline-none focus:border-blue-500"
+              className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 sm:py-3 w-full text-white text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
 
@@ -212,16 +223,12 @@ export default function Calculator() {
           {platform === "MERCADO_LIVRE" && (
             <>
               <div>
-                <label className="text-sm font-semibold text-slate-300 block mb-2">Tipo de Anúncio</label>
+                <label className="text-xs sm:text-sm font-semibold text-slate-300 block mb-1.5">Tipo de Anúncio</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setMlListingType("CLASSICO");
-                      setSellingPrice("");
-                      setDesiredProfit("");
-                    }}
-                    className={`py-2.5 rounded-xl font-semibold text-xs ${
+                    onClick={() => setMlListingType("CLASSICO")}
+                    className={`py-2.5 rounded-xl font-semibold text-[11px] sm:text-xs px-1 text-center transition-colors ${
                       mlListingType === "CLASSICO" ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-300"
                     }`}
                   >
@@ -229,12 +236,8 @@ export default function Calculator() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setMlListingType("PREMIUM");
-                      setSellingPrice("");
-                      setDesiredProfit("");
-                    }}
-                    className={`py-2.5 rounded-xl font-semibold text-xs ${
+                    onClick={() => setMlListingType("PREMIUM")}
+                    className={`py-2.5 rounded-xl font-semibold text-[11px] sm:text-xs px-1 text-center transition-colors ${
                       mlListingType === "PREMIUM" ? "bg-orange-500 text-white" : "bg-slate-800 text-slate-300"
                     }`}
                   >
@@ -243,37 +246,35 @@ export default function Calculator() {
                 </div>
               </div>
 
-              <div className="border-t border-slate-800 pt-4">
+              <div className="border-t border-slate-800/80 pt-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-300">Oferecer Frete Grátis?</label>
+                  <label className="text-xs sm:text-sm font-semibold text-slate-300">Oferecer Frete Grátis?</label>
                   <input
                     type="checkbox"
                     disabled={Number(sellingPrice) >= 79}
                     checked={Number(sellingPrice) >= 79 || mlIsFreeShipping}
                     onChange={(e) => {
-                      mlIsFreeShipping(e.target.checked);
-                      setSellingPrice("");
-                      setDesiredProfit("");
+                      if (typeof setMlIsFreeShipping === "function") {
+                        setMlIsFreeShipping(e.target.checked);
+                      } else {
+                        mlIsFreeShipping(e.target.checked);
+                      }
                     }}
                     className="w-5 h-5 accent-blue-500 cursor-pointer disabled:opacity-50"
                   />
                 </div>
                 {Number(sellingPrice) >= 79 && (
-                  <p className="text-xs text-yellow-400 mb-2">⚠️ Grátis obrigatório pelo M.L. (A partir de R$ 79)</p>
+                  <p className="text-[11px] text-yellow-400 font-medium mb-2">⚠️ Grátis obrigatório pelo M.L. (A partir de R$ 79)</p>
                 )}
 
                 {(mlIsFreeShipping || Number(sellingPrice) >= 79) && (
-                  <div>
+                  <div className="mt-1">
                     <span className="text-xs text-slate-400 block mb-1">Custo do envio (Tabela Mercado Envios):</span>
                     <input
                       type="number"
                       value={mlShippingCost}
-                      onChange={(e) => {
-                        setMlShippingCost(e.target.value);
-                        setSellingPrice("");
-                        setDesiredProfit("");
-                      }}
-                      className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 w-full text-white text-sm"
+                      onChange={(e) => setMlShippingCost(e.target.value)}
+                      className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 w-full text-white text-sm focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 )}
@@ -285,36 +286,28 @@ export default function Calculator() {
           {platform === "SHOPEE" && (
             <>
               <div className="border-t border-slate-800 pt-4">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between gap-4 mb-2">
                   <div>
-                    <label className="text-sm font-semibold text-slate-300 block">Programa de Frete Grátis Extra?</label>
-                    <span className="text-xs text-slate-400 block">Adiciona +6% na comissão da Shopee</span>
+                    <label className="text-xs sm:text-sm font-semibold text-slate-300 block">Programa de Frete Grátis Extra?</label>
+                    <span className="text-[11px] text-slate-400 block leading-tight mt-0.5">Adiciona +6% na comissão da Shopee</span>
                   </div>
                   <input
                     type="checkbox"
                     checked={shopeeHasFreeShippingProgram}
-                    onChange={(e) => {
-                      setShopeeHasFreeShippingProgram(e.target.checked);
-                      setSellingPrice("");
-                      setDesiredProfit("");
-                    }}
-                    className="w-5 h-5 accent-orange-500 cursor-pointer"
+                    onChange={(e) => setShopeeHasFreeShippingProgram(e.target.checked)}
+                    className="w-5 h-5 flex-shrink-0 accent-orange-500 cursor-pointer"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Custos extras por envio / embalagem (R$ - Opcional)</label>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Custos extras por envio / embalagem (R$ - Opcional)</label>
                 <input
                   type="number"
                   placeholder="Ex: 2.00"
                   value={shopeeExtraCost}
-                  onChange={(e) => {
-                    setShopeeExtraCost(e.target.value);
-                    setSellingPrice("");
-                    setDesiredProfit("");
-                  }}
-                  className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 w-full text-white text-sm"
+                  onChange={(e) => setShopeeExtraCost(e.target.value)}
+                  className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 w-full text-white text-sm focus:outline-none focus:border-orange-500"
                 />
               </div>
             </>
@@ -322,48 +315,44 @@ export default function Calculator() {
 
           {/* Imposto */}
           <div className="border-t border-slate-800 pt-4">
-            <label className="text-xs font-semibold text-slate-400 block mb-1">Porcentagem de Imposto/Nota Fiscal (% - Opcional)</label>
+            <label className="text-[11px] font-semibold text-slate-400 block mb-1">Porcentagem de Imposto/Nota Fiscal (% - Opcional)</label>
             <input
               type="number"
               placeholder="Ex: 4"
               value={taxPercent}
-              onChange={(e) => {
-                setTaxPercent(e.target.value);
-                setSellingPrice("");
-                setDesiredProfit("");
-              }}
-              className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 w-28 text-white text-sm"
+              onChange={(e) => setTaxPercent(e.target.value)}
+              className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 w-28 text-white text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
 
         </div>
 
         {/* PAINEL DE RESULTADOS (DIREITA) */}
-        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+        <div className="bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
           {!results ? (
-            <div className="h-full flex items-center justify-center text-slate-500 text-center p-6">
+            <div className="h-full min-h-[200px] flex items-center justify-center text-slate-500 text-center text-sm p-4">
               Digite o custo e o preço de venda para simular os resultados.
             </div>
           ) : (
-            <div className="flex flex-col h-full justify-between gap-6">
+            <div className="flex flex-col h-full justify-between gap-5">
 
               {/* BLOCO PRINCIPAL DO LUCRO + CAMPO DE LUCRO DESEJADO AO LADO */}
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm text-slate-400 font-medium">Lucro Líquido Estimado ({platform === "SHOPEE" ? "Shopee" : "M.L."})</p>
-                  <h2 className={`text-4xl font-bold mt-1 ${results.profit >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm text-slate-400 font-medium">Lucro Líquido Estimado ({platform === "SHOPEE" ? "Shopee" : "M.L."})</p>
+                  <h2 className={`text-3xl sm:text-4xl font-black tracking-tight ${results.profit >= 0 ? "text-green-400" : "text-red-400"}`}>
                     R$ {formatCurrency(results.profit)}
                   </h2>
-                  <span className={`text-xs font-semibold inline-block mt-2 px-2 py-0.5 rounded ${
+                  <span className={`text-[11px] font-bold inline-block mt-1 px-2 py-0.5 rounded tracking-wide ${
                     results.margin >= 50 ? "bg-green-950 text-green-400" : results.margin > 0 ? "bg-yellow-950 text-yellow-400" : "bg-red-950 text-red-400"
                   }`}>
-                    Margem (Sobre o Custo): {results.margin.toFixed(2)}%
+                    Margem: {results.margin.toFixed(2)}%
                   </span>
                 </div>
 
-                {/* Input de Lucro Desejado adicionado dinamicamente ao lado */}
-                <div className="w-full sm:w-auto min-w-[150px]">
-                  <label className="text-xs font-semibold text-slate-400 block mb-1.5">Definir Lucro Desejado (R$)</label>
+                {/* Input de Lucro Desejado */}
+                <div className="w-full sm:w-auto min-w-[140px] bg-slate-950/40 p-3 sm:p-0 rounded-xl border border-slate-800 sm:border-none">
+                  <label className="text-xs font-semibold text-slate-400 block mb-1">Definir Lucro Alvo (R$)</label>
                   <input
                     id="desiredProfitInput"
                     type="number"
@@ -376,55 +365,57 @@ export default function Calculator() {
               </div>
 
               {/* DETALHAMENTO DAS DESPESAS */}
-              <div className="space-y-3 border-t border-b border-slate-800 py-4 text-sm">
-                <div className="flex justify-between">
+              <div className="space-y-3 border-t border-b border-slate-800 py-4 text-xs sm:text-sm">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">Preço de Venda:</span>
-                  <span className="text-white font-semibold">R$ {formatCurrency(sellingPrice)}</span>
+                  <span className="text-white font-semibold whitespace-nowrap">R$ {formatCurrency(sellingPrice)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-400">(-) Custo do Produto:</span>
-                  <span className="text-slate-300">R$ {formatCurrency(productCost)}</span>
+                  <span className="text-slate-300 whitespace-nowrap">R$ {formatCurrency(productCost)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-400 text-[11px] sm:text-xs">
                     (-) Comissão {platform === "SHOPEE" ? "Shopee" : "M.L."} ({results.commissionPercent.toFixed(0)}%):
-                    {platform === "SHOPEE" && results.commission === 100 && " (Atingiu Teto Máximo!)"}
+                    {platform === "SHOPEE" && results.commission === 100 && " (Teto Máx.)"}
                   </span>
-                  <span className="text-red-400">R$ {formatCurrency(results.commission)}</span>
+                  <span className="text-red-400 font-medium whitespace-nowrap">R$ {formatCurrency(results.commission)}</span>
                 </div>
                 {results.fixedFee > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">
-                      (-) Taxa Fixa por Item {platform === "SHOPEE" ? "(Padrão Shopee)" : "(Preço < R$79)"}:
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-400 text-[11px] sm:text-xs">
+                      (-) Taxa Fixa por Item:
                     </span>
-                    <span className="text-red-400">R$ {formatCurrency(results.fixedFee)}</span>
+                    <span className="text-red-400 font-medium whitespace-nowrap">R$ {formatCurrency(results.fixedFee)}</span>
                   </div>
                 )}
                 {results.shippingFee > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">
-                      {platform === "SHOPEE" ? "(-) Custos Extras informados:" : "(-) Custo do Frete Grátis:"}
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-400 text-[11px] sm:text-xs">
+                      {platform === "SHOPEE" ? "(-) Custos Extras:" : "(-) Frete Grátis:"}
                     </span>
-                    <span className="text-red-400">R$ {formatCurrency(results.shippingFee)}</span>
+                    <span className="text-red-400 font-medium whitespace-nowrap">R$ {formatCurrency(results.shippingFee)}</span>
                   </div>
                 )}
                 {results.taxAmount > 0 && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-slate-400">(-) Imposto / NF-e:</span>
-                    <span className="text-red-400">R$ {formatCurrency(results.taxAmount)}</span>
+                    <span className="text-red-400 font-medium whitespace-nowrap">R$ {formatCurrency(results.taxAmount)}</span>
                   </div>
                 )}
               </div>
 
               {/* TOTAL A RECEBER DA PLATAFORMA */}
-              <div className="bg-slate-950 p-4 rounded-xl flex justify-between items-center">
+              <div className="bg-slate-950 p-3.5 rounded-xl flex justify-between items-center gap-4">
                 <div>
-                  <p className="text-xs text-slate-400">Repasse Líquido na Conta</p>
+                  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Repasse Líquido</p>
                   <p className="text-base text-blue-400 font-bold mt-0.5">
                     R$ {formatCurrency(Number(sellingPrice) - results.totalExpenses)}
                   </p>
                 </div>
-                <span className="text-xs text-slate-500">Sem contar o produto</span>
+                <span className="text-[10px] text-slate-500 text-right leading-tight max-w-[90px]">
+                  Líquido sem o custo do produto
+                </span>
               </div>
 
             </div>
