@@ -89,7 +89,11 @@ export default function Calculator() {
   // mas apenas se o usuário não estiver digitando diretamente no próprio campo de lucro desejado.
   useEffect(() => {
     if (document.activeElement?.id !== "desiredProfitInput" && results) {
-      setDesiredProfit(results.profit > 0 ? results.profit.toFixed(2) : "");
+      const desiredProfitTimer = window.setTimeout(() => {
+        setDesiredProfit(results.profit > 0 ? results.profit.toFixed(2) : "");
+      }, 0);
+
+      return () => window.clearTimeout(desiredProfitTimer);
     }
   }, [results]);
 

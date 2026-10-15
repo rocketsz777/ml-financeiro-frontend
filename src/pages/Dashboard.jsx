@@ -201,11 +201,11 @@ function Dashboard() {
                 <Bar dataKey="valor">
 
                   {
-                    chartData.map((entry, index) => (
+                    data.map((entry, index) => (
 
                       <Cell
-                        key={index}
-                        fill={entry.color}
+                        key={entry.nome}
+                        fill={COLORS[index % COLORS.length]}
                       />
 
                     ))

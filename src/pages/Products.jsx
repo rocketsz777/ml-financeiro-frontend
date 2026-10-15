@@ -30,7 +30,8 @@ function Products() {
 
   // Reseta para a primeira página ao filtrar ou buscar
   useEffect(() => {
-    setCurrentPage(1);
+    const resetPageTimer = window.setTimeout(() => setCurrentPage(1), 0);
+    return () => window.clearTimeout(resetPageTimer);
   }, [search, period]);
 
   async function loadProducts() {
