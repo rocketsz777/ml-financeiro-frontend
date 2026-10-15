@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { isDemoMode } from "../services/api";
 
 export default function Calculator() {
   // Estado para escolher a plataforma
@@ -18,6 +19,20 @@ export default function Calculator() {
   // Estados específicos da Shopee
   const [shopeeHasFreeShippingProgram, setShopeeHasFreeShippingProgram] = useState(true); // Participa do programa de frete grátis (+6%)?
   const [shopeeExtraCost, setShopeeExtraCost] = useState("0"); // Custos extras (embalagem, etc)
+  const demoMode = isDemoMode();
+
+  useEffect(() => {
+    if (!demoMode) return;
+
+    setPlatform("MERCADO_LIVRE");
+    setProductCost("68.00");
+    setSellingPrice("149.90");
+    setTaxPercent("4");
+    setDesiredProfit("");
+    setMlListingType("CLASSICO");
+    setMlIsFreeShipping(true);
+    setMlShippingCost("25.00");
+  }, [demoMode]);
 
   // FUNÇÃO PARA LIMPAR TODOS OS DADOS MANUALMENTE
   const handleClear = () => {
@@ -159,6 +174,11 @@ export default function Calculator() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6">
+      {demoMode && (
+        <div className="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-xs sm:text-sm text-cyan-200">
+          Exemplo fictício: farol de milha para Chevrolet Onix — os campos podem ser alterados para testar outros cenários.
+        </div>
+      )}
       {/* SELETOR DE PLATAFORMA + BOTÃO LIMPAR - Layout adaptável para Mobile */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="flex flex-1 gap-2">
