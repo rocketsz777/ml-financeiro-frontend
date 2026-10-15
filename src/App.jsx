@@ -150,6 +150,13 @@ function App() {
   }, [marketplace, period])
 
   function loadDashboard() {
+    if (demoMode) {
+      api.get("/api/dashboard/summary")
+        .then(response => setDashboard(response.data))
+        .catch(console.error)
+      return
+    }
+
     let url = `/api/dashboard/summary?period=${period}`
     if (marketplace !== "ALL") {
       url += `&marketplace=${marketplace}`
@@ -358,6 +365,13 @@ function App() {
   }
 
   async function checkConnections() {
+    if (demoMode) {
+      setAppReady(true)
+      setMercadoLivreReady(false)
+      setShopeeReady(false)
+      return
+    }
+
     try {
       const health = await api.get("/health")
       setAppReady(health.data?.status === "UP")
@@ -383,6 +397,13 @@ function App() {
   const importSales = async () => {
     try {
       setLoadingImport(true)
+      if (demoMode) {
+        const response = await api.post("/api/import/sales")
+        alert(`${response.data?.totalImported || 0} vendas ficticias carregadas para demonstracao.`)
+        loadDashboard()
+        loadSalesRange()
+        return
+      }
       const response = await api.post("/api/import/sales")
       alert(
           demoMode

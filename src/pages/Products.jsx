@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Pencil, Save, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { api } from "../services/api";
+import { api, isDemoMode } from "../services/api";
 
 function Products() {
   const [products, setProducts] = useState([]);
@@ -215,6 +215,10 @@ function Products() {
 
   const saveEditing = async (product) => {
     if (!editing || !product.sku) return;
+    if (isDemoMode()) {
+      alert("Edicao desativada na demonstracao.");
+      return;
+    }
 
     const updates = {};
 
@@ -330,6 +334,10 @@ function Products() {
     editing?.sku === product.sku && editing?.field === field;
 
   const createProduct = async () => {
+    if (isDemoMode()) {
+      alert("Cadastro desativado na demonstracao.");
+      return;
+    }
     if (!newProduct.name.trim()) {
       alert("Informe o nome")
       return

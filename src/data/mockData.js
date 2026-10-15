@@ -1,8 +1,8 @@
 export const mockDashboard = {
-    faturamento: 1100.95,
-    custos: 489.70,
-    lucro: 611.25,
-    vendasCount: 20,
+    faturamento: 44.60,
+    custos: 20.00,
+    lucro: 24.60,
+    vendasCount: 1,
 };
 
 export const mockProdutos = [
@@ -39,7 +39,7 @@ export const mockVendas = [
         totalPrice: 44.60,
         cost: 20.00,
         profit: 24.60,
-        soldAt: "2026-08-04T10:00:00"
+        soldAt: new Date().toISOString()
     }
 ];
 const normalizedProducts = mockProdutos.map((product) => ({
@@ -69,6 +69,7 @@ export const mockData = {
             0
         ),
         totalExtraCosts: 0,
+        period: "MONTH",
         topSellingItems: normalizedSales.reduce((acc, sale) => {
             acc[sale.productName] = (acc[sale.productName] || 0) + Number(sale.quantity || 0);
             return acc;
