@@ -42,3 +42,49 @@ export const mockVendas = [
         soldAt: "2026-08-04T10:00:00"
     }
 ];
+const normalizedProducts = mockProdutos.map((product) => ({
+    ...product,
+    stockQuantity: product.stockQuantity ?? product.stock ?? 0,
+    costPrice: product.costPrice ?? product.unitCost ?? 0,
+    oldCostPrice: product.oldCostPrice ?? 0,
+    marketplace: product.marketplace ?? "CADASTRO",
+}));
+
+const normalizedSales = mockVendas.map((sale) => ({
+    ...sale,
+    netAmount: sale.netAmount ?? sale.totalPrice ?? 0,
+    productCost: sale.productCost ?? sale.cost ?? 0,
+    marketplaceItemId: sale.marketplaceItemId ?? "",
+}));
+
+export const mockData = {
+    dashboard: {
+        ...mockDashboard,
+        totalRevenue: mockDashboard.faturamento,
+        totalCost: mockDashboard.custos,
+        totalProfit: mockDashboard.lucro,
+        salesCount: mockDashboard.vendasCount,
+        unitsSold: normalizedSales.reduce(
+            (total, sale) => total + Number(sale.quantity || 0),
+            0
+        ),
+        totalExtraCosts: 0,
+        topSellingItems: normalizedSales.reduce((acc, sale) => {
+            acc[sale.productName] = (acc[sale.productName] || 0) + Number(sale.quantity || 0);
+            return acc;
+        }, {}),
+        productCostBreakdown: normalizedSales.reduce((acc, sale) => {
+            acc[sale.productName] =
+                (acc[sale.productName] || 0) +
+                Number(sale.productCost || 0) * Number(sale.quantity || 0);
+            return acc;
+        }, {}),
+        topProfitableItems: normalizedSales.reduce((acc, sale) => {
+            acc[sale.productName] = (acc[sale.productName] || 0) + Number(sale.profit || 0);
+            return acc;
+        }, {}),
+    },
+    products: normalizedProducts,
+    sales: normalizedSales,
+    reports: {},
+};

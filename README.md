@@ -1,16 +1,35 @@
-# React + Vite
+# Rocket Imports Gestao
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React/Vite do sistema de gestao financeira para marketplaces.
 
-Currently, two official plugins are available:
+## Modo oficial
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Por padrao, o frontend usa a API real configurada em `src/services/api.js`.
 
-## React Compiler
+```bash
+npm run dev
+npm run build
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Para manter o oficial sem dados mockados, nao defina `VITE_USE_MOCK=true` no ambiente de producao.
 
-## Expanding the ESLint configuration
+## Modo demo
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+O modo demo bloqueia chamadas externas e usa apenas dados ficticios de `src/data/mockData.js`.
+
+Use para apresentacoes, portfolio e LinkedIn:
+
+```bash
+npm run dev:demo
+npm run build:demo
+```
+
+Tambem e possivel ativar o demo em qualquer deploy adicionando `?demo=true` ao final da URL.
+
+Exemplo:
+
+```text
+https://seu-site.vercel.app/?demo=true
+```
+
+Nesse modo, dashboards, produtos, vendas, integracoes, importacao e relatorios sao simulados localmente.

@@ -5,12 +5,18 @@ export const api = axios.create({
   baseURL: "https://rocket-imports-api.onrender.com",
 });
 
-api.interceptors.request.use((config) => {
-  const isMock = import.meta.env.VITE_USE_MOCK === "true";
+export const isDemoMode = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasDemoParam = urlParams.get("demo") === "true";
+  const hasMockEnv = import.meta.env.VITE_USE_MOCK === "true";
 
-  if (isMock) {
+  return hasDemoParam || hasMockEnv;
+};
+
+api.interceptors.request.use((config) => {
+  if (isDemoMode()) {
     let mockResponseData = null;
-    const url = config.url;
+    const url = config.url || "";
 
     if (url.includes("/api/sales") || url.includes("/vendas")) {
       mockResponseData = mockData.sales;

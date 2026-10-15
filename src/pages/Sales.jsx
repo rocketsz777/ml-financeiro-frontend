@@ -3,7 +3,6 @@ import { api } from "../services/api";
 
 function Sales() {
 
-  const [products, setProducts] = useState([])
   const [productSkuMap, setProductSkuMap] = useState({})
   const [period, setPeriod] = useState("MONTH")
 
@@ -40,8 +39,6 @@ function Sales() {
      .then(response => {
 
        const productsData = response.data || []
-
-       setProducts(productsData)
 
        const skuMap = {}
 
