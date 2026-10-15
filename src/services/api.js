@@ -12,7 +12,8 @@ export const isDemoMode = () => {
   const hasMockEnv = import.meta.env.VITE_USE_MOCK === "true";
   const isVercelDeployment = window.location.hostname.endsWith(".vercel.app");
 
-  return !disablesDemoParam && (hasDemoParam || hasMockEnv || isVercelDeployment);
+  if (isVercelDeployment || hasMockEnv) return true;
+  return hasDemoParam && !disablesDemoParam;
 };
 
 api.interceptors.request.use((config) => {

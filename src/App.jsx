@@ -96,6 +96,12 @@ function App() {
   }
 
   const connectMercadoLivre = async () => {
+    if (demoMode) {
+      setMercadoLivreReady(true)
+      alert("Conexao simulada no modo demo.")
+      return
+    }
+
     try {
       setLoadingML(true)
       const appOnline = await wakeUpBackend()
@@ -118,6 +124,12 @@ function App() {
   }
 
   const connectShopee = async () => {
+    if (demoMode) {
+      setShopeeReady(true)
+      alert("Conexao simulada no modo demo.")
+      return
+    }
+
     try {
       setLoadingShopee(true)
       const appOnline = await wakeUpBackend()
