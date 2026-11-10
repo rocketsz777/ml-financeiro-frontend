@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pencil, Save, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, Save, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { api, isDemoMode } from "../services/api";
 
 function Products() {
@@ -9,6 +9,8 @@ function Products() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
   const [showNewProductModal, setShowNewProductModal] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -367,6 +369,21 @@ function Products() {
     }
   }
 
+  const deleteProduct = async () => {
+    if (!productToDelete?.sku || isDemoMode()) return;
+    try {
+      setDeletingProduct(true);
+      await api.delete(`/api/produtos/${encodeURIComponent(productToDelete.sku)}`);
+      setProducts((current) => current.filter((product) => product.sku !== productToDelete.sku));
+      setProductToDelete(null);
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível excluir o produto.");
+    } finally {
+      setDeletingProduct(false);
+    }
+  };
+
   return (
     <div className="w-full px-2 sm:px-4 py-4 max-w-full overflow-hidden">
       {/* SEÇÃO DO TOPO - Totalmente responsiva para Mobile */}
@@ -525,6 +542,15 @@ function Products() {
                           className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40"
                         >
                           <Pencil size={13} />
+                        </button>
+                        <button
+                          title="Excluir produto"
+                          aria-label={`Excluir produto ${product.name}`}
+                          onClick={() => setProductToDelete(product)}
+                          disabled={!product.registered || isDemoMode()}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     )}
@@ -794,6 +820,19 @@ function Products() {
               >
                 Salvar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {productToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingProduct) setProductToDelete(null) }}>
+          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl" role="alertdialog" aria-modal="true" aria-labelledby="delete-product-title" aria-describedby="delete-product-description">
+            <h2 id="delete-product-title" className="text-xl font-bold text-white">Excluir produto</h2>
+            <p id="delete-product-description" className="mt-3 text-slate-300">Deseja excluir este produto?</p>
+            <p className="mt-1 text-sm text-slate-400">{productToDelete.name} ({productToDelete.sku})</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setProductToDelete(null)} disabled={deletingProduct} className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600 disabled:opacity-60">Cancelar</button>
+              <button type="button" onClick={deleteProduct} disabled={deletingProduct} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60">{deletingProduct ? "Excluindo..." : "Excluir"}</button>
             </div>
           </div>
         </div>

@@ -26,7 +26,8 @@ import {
   Calculator as CalculatorIcon,
   BarChart3,
   Menu,
-  X
+  X,
+  Plus
 } from "lucide-react"
 
 import {
@@ -75,6 +76,9 @@ function App() {
   const [shopeeReady, setShopeeReady] = useState(false)
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [showExtraCostModal, setShowExtraCostModal] = useState(false)
+  const [extraCost, setExtraCost] = useState({ name: "", value: "" })
+  const [savingExtraCost, setSavingExtraCost] = useState(false)
 
   const wakeUpBackend = async () => {
     try {
@@ -185,6 +189,32 @@ function App() {
         .catch(error => {
           console.error(error)
         })
+  }
+
+  async function addExtraCost(event) {
+    event.preventDefault()
+    const name = extraCost.name.trim()
+    const value = Number(String(extraCost.value).replace(",", "."))
+    if (!name || !Number.isFinite(value) || value <= 0) {
+      alert("Informe a descrição e um valor válido para o custo extra.")
+      return
+    }
+    if (demoMode) {
+      alert("O cadastro de custos extras fica desativado no modo demonstração.")
+      return
+    }
+    try {
+      setSavingExtraCost(true)
+      await api.post("/api/extra-costs", { name, value, active: true })
+      setExtraCost({ name: "", value: "" })
+      setShowExtraCostModal(false)
+      loadDashboard()
+    } catch (error) {
+      console.error(error)
+      alert("Não foi possível adicionar o custo extra.")
+    } finally {
+      setSavingExtraCost(false)
+    }
   }
 
   function loadSalesRange() {
@@ -639,6 +669,13 @@ function App() {
                 <Download size={16} />
                 {loadingImport ? "Importando..." : "Importar"}
               </button>
+              <button
+                  onClick={() => setShowExtraCostModal(true)}
+                  className="bg-amber-600 hover:bg-amber-500 px-3 py-1.5 text-sm rounded-xl font-semibold transition flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
+              >
+                <Plus size={16} />
+                Adicionar custo extra
+              </button>
             </div>
 
             <div className="text-xs text-slate-400 text-left sm:text-right flex flex-wrap items-center gap-1.5 mt-0.5">
@@ -891,6 +928,24 @@ function App() {
           </div>
         </div>
       </div>
+      {showExtraCostModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowExtraCostModal(false) }}>
+          <form onSubmit={addExtraCost} className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="extra-cost-title">
+            <h2 id="extra-cost-title" className="text-xl font-bold">Adicionar custo extra</h2>
+            <p className="mt-1 text-sm text-slate-400">Informe a descrição e o valor do custo.</p>
+            <label className="mt-5 block text-sm font-medium text-slate-300">Descrição
+              <input autoFocus value={extraCost.name} onChange={(event) => setExtraCost({ ...extraCost, name: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none focus:border-amber-500" placeholder="Ex.: embalagem, frete" />
+            </label>
+            <label className="mt-4 block text-sm font-medium text-slate-300">Valor (R$)
+              <input type="number" min="0.01" step="0.01" value={extraCost.value} onChange={(event) => setExtraCost({ ...extraCost, value: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none focus:border-amber-500" placeholder="0,00" />
+            </label>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowExtraCostModal(false)} className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-600">Cancelar</button>
+              <button type="submit" disabled={savingExtraCost} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold hover:bg-amber-500 disabled:opacity-60">{savingExtraCost ? "Salvando..." : "Adicionar"}</button>
+            </div>
+          </form>
+        </div>
+      )}
   )
 
   return (
