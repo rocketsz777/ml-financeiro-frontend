@@ -583,6 +583,7 @@ function App() {
   const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#ef4444"]
 
   const dashboardPage = (
+      <>
       <div>
         {/* TOPO */}
         <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
@@ -946,6 +947,7 @@ function App() {
           </form>
         </div>
       )}
+      </>
   )
 
   return (
